@@ -1,0 +1,4 @@
+version: "3"
+services:
+  pc_group_membership_manager:
+    build: .

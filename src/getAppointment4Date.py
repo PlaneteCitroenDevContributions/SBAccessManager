@@ -19,27 +19,28 @@ load_dotenv(dotenv_path=env_path, verbose=True, override=False)
 caldav_principal_url = os.getenv("CALDAV_PRINCIPAL_URL", 'https://cloud.forumtestplanetecitroen.fr/remote.php/dav')
 caldav_username = os.getenv("CALDAV_USERNAME")
 caldav_password = os.getenv("CALDAV_PASSWORD")
-servicebox_calendar_name = os.getenv("SERVICE_BOX_CALENDAR_NAME", 'AccesServiceBox')
+servicebox_calendar_name = os.getenv("SERVICE_BOX_CALENDAR_NAME", '')
 
 
 
 def main ():
     
-    client = caldav.DAVClient(url=caldav_principal_url, caldav_username=caldav_username, caldav_password=caldav_password)
+    client = caldav.DAVClient(url=caldav_principal_url, username=caldav_username, password=caldav_password)
     my_principal = client.principal()
 
     calendars = my_principal.calendars()
     
     servicebox_calendar = None
-    for c in calendars:
-        print ('Found calendar ' + c.name, file=sys.stderr)
-        if c.name == servicebox_calendar_name:
-            servicebox_calendar = c
-            break
+    if servicebox_calendar_name != '':
+        for c in calendars:
+            print ('Found calendar ' + c.name, file=sys.stderr)
+            if c.name == servicebox_calendar_name:
+                servicebox_calendar = c
+                break
     
     if not servicebox_calendar:
-        print ('Calendar ' + servicebox_calendar_name + ' not found', file=sys.stderr)
-        return []
+        print ('Specific calendar ' + servicebox_calendar_name + ' not found. Using principal', file=sys.stderr)
+        servicebox_calendar=calendars[0]
     
     ## Let's search for the newly added event.
     ## (this may fail if the server doesn't support expand)

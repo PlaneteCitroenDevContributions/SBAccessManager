@@ -9,7 +9,7 @@ servicebox_calendar_name = 'AccesServiceBox'
 
 username = 'servicebox'
 password = '3XQJ3-C5Mba-WTsHb-95AnZ-WSNBz'
-servicebox_calendar_name = 'Personal'
+servicebox_calendar_name = 'AccesServiceBox'
 
 
 def main ():

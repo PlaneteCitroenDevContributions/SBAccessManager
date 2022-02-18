@@ -1,6 +1,7 @@
 import sys
 import caldav
 import datetime
+from dotenv import load_dotenv
 
 caldav_url = 'https://cloud.forumtestplanetecitroen.fr/remote.php/dav'
 username = 'bernhara_admin'
@@ -10,6 +11,19 @@ servicebox_calendar_name = 'AccesServiceBox'
 username = 'servicebox'
 password = '3XQJ3-C5Mba-WTsHb-95AnZ-WSNBz'
 servicebox_calendar_name = 'AccesServiceBox'
+
+#
+# load config for tweet API credentials
+#
+this_file_dirname = os.path.dirname( __file__)
+env_path = os.path.join ('..', this_file_dirname, 'dav_config.env')
+load_dotenv(dotenv_path=env_path, verbose=True, override=False)
+
+consumer_key = os.getenv("TWITTER_API_KEY")
+consumer_secret = os.getenv("TWITTER_API_SECRET")
+access_token = os.getenv("TWITTER_ACCESS_TOKEN")
+access_token_secret = os.getenv("TWITTER_TOKEN_SECRET")
+
 
 
 def main ():

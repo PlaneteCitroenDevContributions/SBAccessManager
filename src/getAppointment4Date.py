@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 # lInitialize env config file
 #
 this_file_dirname = os.path.dirname( __file__)
-env_path = os.path.join ('..', this_file_dirname, 'dav_config.env')
+env_path = os.path.join (this_file_dirname, '..', 'dav_config.env')
 load_dotenv(dotenv_path=env_path, verbose=True, override=False)
 
 
@@ -17,15 +17,15 @@ load_dotenv(dotenv_path=env_path, verbose=True, override=False)
 #
 
 caldav_principal_url = os.getenv("CALDAV_PRINCIPAL_URL", 'https://cloud.forumtestplanetecitroen.fr/remote.php/dav')
-username = os.getenv("USERNAME")
-password = os.getenv("PASSWORD")
+caldav_username = os.getenv("CALDAV_USERNAME")
+caldav_password = os.getenv("CALDAV_PASSWORD")
 servicebox_calendar_name = os.getenv("SERVICE_BOX_CALENDAR_NAME", 'AccesServiceBox')
 
 
 
 def main ():
     
-    client = caldav.DAVClient(url=caldav_principal_url, username=username, password=password)
+    client = caldav.DAVClient(url=caldav_principal_url, caldav_username=caldav_username, caldav_password=caldav_password)
     my_principal = client.principal()
 
     calendars = my_principal.calendars()

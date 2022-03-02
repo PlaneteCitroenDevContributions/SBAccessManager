@@ -7,6 +7,7 @@ name = "pypi"
 caldav = "*"
 python-dotenv = "*"
 pipenv = "*"
+icalendar = "*"
 
 [dev-packages]
 

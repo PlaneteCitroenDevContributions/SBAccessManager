@@ -25,7 +25,7 @@ servicebox_calendar_name = os.getenv("SERVICE_BOX_CALENDAR_NAME", '')
 
 def main ():
     
-    client = caldav.DAVClient(url=caldav_principal_url, username=caldav_username, password=caldav_password)
+    client = caldav.DAVClient(url=caldav_principal_url, username=caldav_username, password=caldav_password, ssl_verify_cert=False)
     my_principal = client.principal()
 
     calendars = my_principal.calendars()
@@ -51,19 +51,35 @@ def main ():
     events_fetched = []
     try:
     
-        events_fetched = servicebox_calendar.date_search(start=start, end=end, expand=True)
+        events_fetched = servicebox_calendar.date_search(start=start, end=end, expand=True) #compfilter=None, 
 
     except:
         print("Your calendar server does apparently not support expanded search", file=sys.stderr)
 
 
     for event in events_fetched:
+        event.load()
         print (event)
+        s_event = str(event)
+        print (s_event)
         event_data = event.data
         print ('======================================')
-        print (event_data)
-        event_vobject = event.vobject_instance
+        print (str(event_data))
         
+        icalendar_instance = event.icalendar_instance
+        
+        tt = icalendar_instance.walk()
+        zz = icalendar_instance.property_items()
+        
+        subcomponents = icalendar_instance.subcomponents
+        
+        
+        
+        
+        
+        event.add_organizer()
+        event_data = event.data
+        print (event_data)
     
     
     

@@ -5,7 +5,7 @@ PROJECT_ROOT_DIR="${HERE}/.."
 
 source "${PROJECT_ROOT_DIR}/dav_config.env"
 
-: ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/Scripts/python"}
+: ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
 
 getVCalData ()
 {
@@ -23,21 +23,9 @@ getVCalData ()
     echo "${vcal_data}"
 }
 
-ics_url_list=$( ${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" 2>/dev/null )
-XX=$( ${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" 2>/dev/null )
-
-echo "${ics_url_list}"
-echo ${ics_url_list}
-exit 1
-
-${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" >/tmp/zz.txt
-
-${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" 2 >& 9
-
-echo "${ics_url_list}"
-cat /tmp/zz.txt
-cat <& 9
-exit 1
+ics_url_list=$(
+    ${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" 2>/dev/null
+)
 
 for ics_url in $( echo "${ics_url_list}" )
 do

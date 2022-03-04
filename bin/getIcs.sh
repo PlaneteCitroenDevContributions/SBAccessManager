@@ -18,9 +18,14 @@ getVCalData ()
 	)
 
     vcal_data=$(
-	curl -u ${CALDAV_USERNAME}:${CALDAV_PASSWORD} -H 'Accept: text/calendar' -H 'Accept-Charset: utf-8' "${ics_url}" | \
-	    sed -z 's/\r\n\ //g'
-	     )
+	test -r /tmp/response && rm /tmp/response.txt
+	code=$(
+	    curl \
+	       --silent --show-error -w '%{http_code}' -o /tmp/response.txt \
+	       -u ${CALDAV_USERNAME}:${CALDAV_PASSWORD} -H 'Accept: text/calendar' -H 'Accept-Charset: utf-8' "${ics_url}" )
+	# put everything on a single line
+	sed -z 's/\r\n\ //g' /tmp/response.txt
+    )
 
     echo "${vcal_data}"
 }
@@ -38,20 +43,15 @@ do
 	echo "${vcal_data}" | grep -e '^ORGANIZER;'
 		  )
 
-    iso_organizer_line=$( echo "${organizer_line}" | iconv -f UTF8 -t ISO-8859-1 )
-
     organizer_data=$(
 	echo "${organizer_line}" | sed -e 's/ORGANIZER;//' -e 's/\r$//'
 	     )
 
-    echo "${organizer_data}" > /tmp/zz.txt
     cn=$( echo "${organizer_data}" | sed -e 's/CN=\(.*\):mailto:.*$/\1/' )
     mailto=$( echo "${organizer_data}" | sed -e 's/.*:mailto:\(.*\)$/\1/' )
 
     echo ${cn}
     echo ${mailto}
-    echo
 
-    exit
 done
 

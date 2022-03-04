@@ -53,7 +53,7 @@ def main ():
     
     ## Let's search for the newly added event.
     ## (this may fail if the server doesn't support expand)
-    print("Here is some icalendar data for the next 60 minutes:")
+    print("Here is some icalendar data for the next %s minutes:" % minutes_ahead, file=sys.stderr)
     start = datetime.datetime.now()
     time_range = datetime.timedelta(minutes=minutes_ahead)
     end = start + time_range

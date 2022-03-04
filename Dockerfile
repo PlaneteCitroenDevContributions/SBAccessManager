@@ -37,6 +37,11 @@ RUN python3.9 -m pipenv install
 COPY bin/getIcs.sh bin/getIcs.sh
 COPY src/getAppointments4Date.py src/getAppointments4Date.py
 
+ENV CALDAV_PRINCIPAL_URL=
+ENV CALDAV_USERNAME=
+ENV CALDAV_PASSWORD=
+ENV SERVICE_BOX_CALENDAR_NAME=
+
 ENTRYPOINT [ "/usr/sbin/dsidm", "-y", "/etc/pwdfile.txt" ]
 ENTRYPOINT [ "/bin/bash" ]
 #CMD [ "--help" ]

@@ -54,4 +54,3 @@ do
     echo ${mailto}
 
 done
-

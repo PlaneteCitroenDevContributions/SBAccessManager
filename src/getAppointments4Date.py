@@ -4,6 +4,8 @@ import caldav
 import datetime
 from dotenv import load_dotenv
 
+import argparse
+
 #
 # lInitialize env config file
 #
@@ -24,6 +26,13 @@ servicebox_calendar_name = os.getenv("SERVICE_BOX_CALENDAR_NAME", '')
 
 
 def main ():
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--minutes-ahead', dest='minutes_ahead', type=int, default=5, help='search for events from now to "now + minutes-ahead"')
+
+    args = parser.parse_args()
+
+    minutes_ahead = args.minutes_ahead
     
     client = caldav.DAVClient(url=caldav_principal_url, username=caldav_username, password=caldav_password)
     my_principal = client.principal()
@@ -46,7 +55,7 @@ def main ():
     ## (this may fail if the server doesn't support expand)
     print("Here is some icalendar data for the next 60 minutes:")
     start = datetime.datetime.now()
-    time_range = datetime.timedelta(minutes=60)
+    time_range = datetime.timedelta(minutes=minutes_ahead)
     end = start + time_range
     events_fetched = []
     try:

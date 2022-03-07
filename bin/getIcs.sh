@@ -30,6 +30,22 @@ getVCalData ()
     echo "${vcal_data}"
 }
 
+grantServiceBoxAccess ()
+{
+    ldap_dn="$1"
+
+    dsidm --pwdfile /etc/pwdfile.txt pcds group add_member ServiceBoxAllowed  "${ldap_dn}"
+    
+}
+
+revokeServiceBoxAccess ()
+{
+    ldap_dn="$1"
+
+    dsidm --pwdfile /etc/pwdfile.txt pcds group remove_member ServiceBoxAllowed  "${ldap_dn}"
+}
+
+
 ics_url_list=$(
     ${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" 2>/dev/null
 )
@@ -77,13 +93,13 @@ do
     fi
     
     ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
+
+    grantServiceBoxAccess "${ldap_dn}"
+
+    dsidm --pwdfile /etc/pwdfile.txt pcds group members ServiceBoxAllowed
     
-    ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
+    revokeServiceBoxAccess "${ldap_dn}"
+
+    dsidm --pwdfile /etc/pwdfile.txt pcds group members ServiceBoxAllowed
     
 done
-
-#
-# KEEP:
-# ldapsearch -x -b 'ou=people,dc=planetecitroen,dc=fr' -H ldap://ldap:3389  'mail=raphael.bernhard@orange.fr' dn 2>/dev/null
-# ldapsearch -x -b 'ou=people,dc=planetecitroen,dc=fr' -H ldap://ldap:3389 -z 1 'mail=raphael.bernhard@orange.fr' dn mail
-

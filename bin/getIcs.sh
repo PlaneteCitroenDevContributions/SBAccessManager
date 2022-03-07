@@ -57,7 +57,7 @@ do
 	ldapsearch -x -b 'ou=people,dc=planetecitroen,dc=fr' -H ldap://ldap:3389 -z 1 "mail=${mailto}" dn mail
 		    )
 
-    if grep '--regexp=^mail:'
+    if grep '--regexp=^mail:' <<< ${dn_search_result}
     then
 	# ldap search result OK
 	:
@@ -66,7 +66,19 @@ do
 	continue
     fi
 
-    ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' )
+    ldap_mail=$( sed -n -e '/^mail: /s/^mail: //p' <<< ${dn_search_result} )
+    #
+    # for security, we check that the retrieved mail is what we searched fo
+    #
+    if [[ "${mailto}" != "${ldap_mail}" ]]
+    then
+	echo "INTERNAL ERROR: Searched for \"${mailto}\" and found \"${ldap_mail}\" in ldap" 1>&2
+	continue
+    fi
+    
+    ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
+    
+    ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
     
 done
 

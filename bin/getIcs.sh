@@ -74,8 +74,9 @@ do
     displayName=$( echo "${organizer_data}" | sed -e 's/CN=\(.*\):mailto:.*$/\1/' )
     mailto=$( echo "${organizer_data}" | sed -e 's/.*:mailto:\(.*\)$/\1/' )
 
-    echo ${displayName}
-    echo ${mailto}
+    (
+	echo "INFO: display Name \"${displayName}\" with email \"${mailto}\" has reserved"
+    ) 1>&2
 
     dn_search_result=$(
 	${ldapsearch_cmd} -z 1 "mail=${mailto}" dn mail

@@ -53,6 +53,11 @@ ics_url_list=$(
     ${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" 2>/dev/null
 )
 
+#
+# search for all users who reserved
+#
+
+allowedLdapDNs=''
 for ics_url in $( echo "${ics_url_list}" )
 do
 
@@ -97,12 +102,43 @@ do
     
     ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    grantServiceBoxAccess "${ldap_dn}"
+    allowedLdapDNs=="${allowedLdapDNs} ${ldap_dn}"
 
-    ${dsidm_cmd} group members ServiceBoxAllowed
-    
-    revokeServiceBoxAccess "${ldap_dn}"
-
-    ${dsidm_cmd} group members ServiceBoxAllowed
-    
 done
+
+# FIXME: rename this var
+already_allowed_dns=$( ${dsidm_cmd} group members ServiceBoxAllowed | sed -e '/^dn: /s/^dn: //' )
+
+#
+# allow new users who reserved and are not already allowed
+#
+for dn in ${allowedLdapDNs}
+do
+    if grep "${dn}" <<< ${already_allowed_dns}
+    then
+	# already allowd => skip
+	:
+    else
+	grantServiceBoxAccess "${dn}"
+    fi
+done
+
+#
+# revoke all users who did not reserve and are currently allowed
+#
+
+for dn in ${already_allowed_dns}
+do
+    if grep "${dn}" <<< ${allowedLdapDNs}
+    then
+	:
+    else
+	revokeServiceBoxAccess "${dn}"
+    fi
+done
+
+(
+    echo "INFO: currently allowed DNs"
+    ${dsidm_cmd} group members ServiceBoxAllowed
+) 1>&2
+

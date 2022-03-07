@@ -1,4 +1,16 @@
 version: "3"
 services:
   pc_group_membership_manager:
-    build: .
+     build: .
+  volumes:
+     - ./dav_config.env:/code/dav_config.env:ro
+     - ./dsrc.txt:/data/config/container.inf:ro
+     - ./pwdfile.txt:/etc/pwdfile.txt:ro
+   networks:
+     - internal_services
+
+networks:
+
+   internal_services:
+      external:
+         name: internal_services

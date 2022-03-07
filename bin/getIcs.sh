@@ -53,6 +53,21 @@ do
     echo ${displayName}
     echo ${mailto}
 
+    dn_search_result=$(
+	ldapsearch -x -b 'ou=people,dc=planetecitroen,dc=fr' -H ldap://ldap:3389 -z 1 "mail=${mailto}" dn mail
+		    )
+
+    if grep '--regexp=^mail:'
+    then
+	# ldap search result OK
+	:
+    else
+	echo "INTERNAL ERROR: Could not file \"${mailto}\" in ldap" 1>&2
+	continue
+    fi
+
+    ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' )
+    
 done
 
 #

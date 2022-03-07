@@ -3,6 +3,9 @@
 HERE=$( dirname "$0" )
 PROJECT_ROOT_DIR="${HERE}/.."
 
+dsidm_cmd="dsidm --pwdfile /etc/pwdfile.txt pcds"
+ldapsearch_cmd="ldapsearch -x -b 'ou=people,dc=planetecitroen,dc=fr' -H ldap://ldap:3389"
+
 export LANG='en_US.utf8'
 
 source "${PROJECT_ROOT_DIR}/dav_config.env"
@@ -34,7 +37,7 @@ grantServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    dsidm --pwdfile /etc/pwdfile.txt pcds group add_member ServiceBoxAllowed  "${ldap_dn}"
+    ${dsidm_cmd} group add_member ServiceBoxAllowed  "${ldap_dn}"
     
 }
 
@@ -42,7 +45,7 @@ revokeServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    dsidm --pwdfile /etc/pwdfile.txt pcds group remove_member ServiceBoxAllowed  "${ldap_dn}"
+    ${dsidm_cmd} group remove_member ServiceBoxAllowed  "${ldap_dn}"
 }
 
 
@@ -70,7 +73,7 @@ do
     echo ${mailto}
 
     dn_search_result=$(
-	ldapsearch -x -b 'ou=people,dc=planetecitroen,dc=fr' -H ldap://ldap:3389 -z 1 "mail=${mailto}" dn mail
+	${ldapsearch_cmd} -z 1 "mail=${mailto}" dn mail
 		    )
 
     if grep '--regexp=^mail:' <<< ${dn_search_result}
@@ -96,10 +99,10 @@ do
 
     grantServiceBoxAccess "${ldap_dn}"
 
-    dsidm --pwdfile /etc/pwdfile.txt pcds group members ServiceBoxAllowed
+    ${dsidm_cmd} group members ServiceBoxAllowed
     
     revokeServiceBoxAccess "${ldap_dn}"
 
-    dsidm --pwdfile /etc/pwdfile.txt pcds group members ServiceBoxAllowed
+    ${dsidm_cmd} group members ServiceBoxAllowed
     
 done

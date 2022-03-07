@@ -81,8 +81,7 @@ do
     dn_search_result=$(
 	${ldapsearch_cmd} -z 1 "mail=${mailto}" dn mail
 		    )
-
-    if grep '--regexp=^mail:' <<< ${dn_search_result}
+    if grep -q '--regexp=^mail:' <<< ${dn_search_result}
     then
 	# ldap search result OK
 	:
@@ -115,7 +114,7 @@ already_allowed_dns=$( ${dsidm_cmd} group members ServiceBoxAllowed | sed -e '/^
 #
 for dn in ${allowedLdapDNs}
 do
-    if grep "${dn}" <<< ${already_allowed_dns}
+    if grep -q "${dn}" <<< ${already_allowed_dns}
     then
 	# already allowd => skip
 	:
@@ -130,7 +129,7 @@ done
 
 for dn in ${already_allowed_dns}
 do
-    if grep "${dn}" <<< ${allowedLdapDNs}
+    if grep -q "${dn}" <<< ${allowedLdapDNs}
     then
 	:
     else

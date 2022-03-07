@@ -3,3 +3,6 @@
 
 /Pipfile.lock
 /dav_config.env
+
+/dsrc.txt
+/pwdfile.txt

@@ -47,10 +47,16 @@ do
 	echo "${organizer_line}" | sed -e 's/ORGANIZER;//' -e 's/\r$//'
 	     )
 
-    cn=$( echo "${organizer_data}" | sed -e 's/CN=\(.*\):mailto:.*$/\1/' )
+    displayName=$( echo "${organizer_data}" | sed -e 's/CN=\(.*\):mailto:.*$/\1/' )
     mailto=$( echo "${organizer_data}" | sed -e 's/.*:mailto:\(.*\)$/\1/' )
 
-    echo ${cn}
+    echo ${displayName}
     echo ${mailto}
 
 done
+
+#
+# KEEP:
+# ldapsearch -x -b 'ou=people,dc=planetecitroen,dc=fr' -H ldap://ldap:3389  'mail=raphael.bernhard@orange.fr' dn 2>/dev/null
+# ldapsearch -x -b 'ou=people,dc=planetecitroen,dc=fr' -H ldap://ldap:3389 -z 1 'mail=raphael.bernhard@orange.fr' dn mail
+

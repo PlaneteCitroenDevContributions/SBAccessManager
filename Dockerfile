@@ -34,7 +34,7 @@ COPY Pipfile .
 
 RUN python3.9 -m pipenv install
 
-COPY bin/getIcs.sh bin/getIcs.sh
+COPY bin/updateGroupsFromAppointements.sh  bin/updateGroupsFromAppointements.sh
 COPY src/getAppointments4Date.py src/getAppointments4Date.py
 
 ENV CALDAV_PRINCIPAL_URL=

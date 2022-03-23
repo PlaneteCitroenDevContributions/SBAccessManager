@@ -7,6 +7,10 @@ services:
          - ./dav_config.env:/code/dav_config.env:ro
          - ./dsrc.txt:/data/config/container.inf:ro
          - ./pwdfile.txt:/etc/pwdfile.txt:ro
+      command:
+         - bash
+         - -c
+         - while true; do sleep 3; echo coucou; done
       networks:
          - internal_services
 

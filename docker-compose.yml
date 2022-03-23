@@ -3,6 +3,8 @@ version: "3"
 services:
    pc_group_membership_manager:
       build: .
+      environment:
+         - DELAY=1m
       volumes:
          - ./dav_config.env:/code/dav_config.env:ro
          - ./dsrc.txt:/data/config/container.inf:ro
@@ -10,7 +12,7 @@ services:
       command:
          - bash
          - -c
-         - while true; do sleep 3; echo coucou; done
+         - while true; do /code/bin/updateGroupsFromAppointements.sh; echo "==== Next check in $${DELAY}"; date; sleep $${DELAY}; done
       networks:
          - internal_services
 

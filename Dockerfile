@@ -42,6 +42,6 @@ ENV CALDAV_USERNAME=
 ENV CALDAV_PASSWORD=
 ENV SERVICE_BOX_CALENDAR_NAME=
 
-ENTRYPOINT [ "/usr/sbin/dsidm", "-y", "/etc/pwdfile.txt" ]
-ENTRYPOINT [ "/bin/bash" ]
-#CMD [ "--help" ]
+#ENTRYPOINT [ "/usr/sbin/dsidm", "-y", "/etc/pwdfile.txt" ]
+#ENTRYPOINT [ "/bin/bash" ]
+CMD [ "/code/bin/updateGroupsFromAppointements.sh" ]

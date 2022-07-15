@@ -5,6 +5,11 @@ services:
       build: .
       environment:
          - DELAY=20s
+         - CALDAV_PRINCIPAL_URL=${CALDAV_PRINCIPAL_URL}
+         - CALDAV_USERNAME=${CALDAV_USERNAME}
+         - CALDAV_PASSWORD=${CALDAV_PASSWORD}
+         - SERVICE_BOX_CALENDAR_NAME=${SERVICE_BOX_CALENDAR_NAME}
+         - ALLOWING_LDAP_GROUP_NAME=${ALLOWING_LDAP_GROUP_NAME}
       volumes:
          - ./dsrc.txt:/data/config/container.inf:ro
          - ./pwdfile.txt:/etc/pwdfile.txt:ro

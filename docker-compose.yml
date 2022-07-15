@@ -6,7 +6,6 @@ services:
       environment:
          - DELAY=20s
       volumes:
-         - ./dav_config.env:/code/dav_config.env:ro
          - ./dsrc.txt:/data/config/container.inf:ro
          - ./pwdfile.txt:/etc/pwdfile.txt:ro
       command:

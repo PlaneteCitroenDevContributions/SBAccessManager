@@ -8,7 +8,7 @@ ldapsearch_cmd="ldapsearch -x -b ou=people,dc=planetecitroen,dc=fr -H ldap://lda
 
 export LANG='en_US.utf8'
 
-source "${PROJECT_ROOT_DIR}/dav_config.env"
+: ${ALLOWING_LDAP_GROUP_NAME:='ServiceBoxAllowed'}
 
 : ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
 

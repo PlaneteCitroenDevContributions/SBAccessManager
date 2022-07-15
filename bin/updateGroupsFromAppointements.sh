@@ -37,7 +37,7 @@ grantServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    ${dsidm_cmd} group add_member ServiceBoxAllowed  "${ldap_dn}"
+    ${dsidm_cmd} group add_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
     
 }
 
@@ -45,7 +45,7 @@ revokeServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    ${dsidm_cmd} group remove_member ServiceBoxAllowed  "${ldap_dn}"
+    ${dsidm_cmd} group remove_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
 }
 
 
@@ -107,7 +107,7 @@ do
 done
 
 # FIXME: rename this var
-already_allowed_dns=$( ${dsidm_cmd} group members ServiceBoxAllowed | sed -e '/^dn: /s/^dn: //' )
+already_allowed_dns=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e '/^dn: /s/^dn: //' )
 
 #
 # allow new users who reserved and are not already allowed
@@ -139,6 +139,6 @@ done
 
 (
     echo "INFO: currently allowed DNs"
-    ${dsidm_cmd} group members ServiceBoxAllowed
+    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}"
 ) 1>&2
 

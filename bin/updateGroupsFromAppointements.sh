@@ -1,9 +1,12 @@
 #! /bin/bash
 
-set -x
-
 HERE=$( dirname "$0" )
 PROJECT_ROOT_DIR="${HERE}/.."
+
+if [[ -n "${SHELL_DEBUG}" ]]
+then
+    set -x
+fi
 
 dsidm_cmd="dsidm --pwdfile /etc/pwdfile.txt pcds"
 ldapsearch_cmd="ldapsearch -x -b ou=people,dc=planetecitroen,dc=fr -H ldap://ldap:3389"

@@ -11,7 +11,8 @@ import argparse
 #
 this_file_dirname = os.path.dirname( __file__)
 env_path = os.path.join (this_file_dirname, '..', 'dav_config.env')
-load_dotenv(dotenv_path=env_path, verbose=True, override=False)
+if os.path.exists(env_path):
+    load_dotenv(dotenv_path=env_path, verbose=True, override=False)
 
 
 #

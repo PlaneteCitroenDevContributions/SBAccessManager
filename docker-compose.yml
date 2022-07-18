@@ -10,6 +10,7 @@ services:
          - CALDAV_PASSWORD=${CALDAV_PASSWORD}
          - SERVICE_BOX_CALENDAR_NAME=${SERVICE_BOX_CALENDAR_NAME}
          - ALLOWING_LDAP_GROUP_NAME=${ALLOWING_LDAP_GROUP_NAME}
+         - SHELL_DEBUG=${SHELL_DEBUG:-}
       volumes:
          - ./dsrc.txt:/data/config/container.inf:ro
          - ./pwdfile.txt:/etc/pwdfile.txt:ro

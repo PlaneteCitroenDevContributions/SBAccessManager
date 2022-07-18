@@ -1,5 +1,7 @@
 #! /bin/bash
 
+set -x
+
 HERE=$( dirname "$0" )
 PROJECT_ROOT_DIR="${HERE}/.."
 
@@ -102,7 +104,7 @@ do
     
     ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    allowedLdapDNs=="${allowedLdapDNs} ${ldap_dn}"
+    allowedLdapDNs="${allowedLdapDNs} ${ldap_dn}"
 
 done
 

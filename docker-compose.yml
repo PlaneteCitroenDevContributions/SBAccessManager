@@ -3,6 +3,7 @@ version: "3"
 services:
    pc_group_membership_manager:
       build: .
+      restart: unless-stopped
       environment:
          - DELAY=20s
          - CALDAV_PRINCIPAL_URL=${CALDAV_PRINCIPAL_URL}

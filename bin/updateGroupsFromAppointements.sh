@@ -83,9 +83,10 @@ do
 	echo "INFO: display Name \"${displayName}\" with email \"${mailto}\" has reserved"
     ) 1>&2
 
+    # retrieve user description (dn + mail) in LDAP, based on his email address (mailto)
     dn_search_result=$(
 	${ldapsearch_cmd} -z 1 "mail=${mailto}" dn mail
-		    )
+    )
     if grep -q '--regexp=^mail:' <<< ${dn_search_result}
     then
 	# ldap search result OK
@@ -93,16 +94,21 @@ do
     else
 	echo "INTERNAL ERROR: Could not file \"${mailto}\" in ldap" 1>&2
 	continue
+	# NOT REACHED
     fi
 
+    #
+    # for security, we check that the retrieved mail is what we searched for
+    #
     ldap_mail=$( sed -n -e '/^mail: /s/^mail: //p' <<< ${dn_search_result} )
-    #
-    # for security, we check that the retrieved mail is what we searched fo
-    #
-    if [[ "${mailto}" != "${ldap_mail}" ]]
+    lowercase_mailto=$( echo "${mailto}" | tr '[:upper:]' '[:lower:]' )
+    lowercase_ldap_mail$( echo "${ldap_mail}" | tr '[:upper:]' '[:lower:]' )
+    if [[ "${lowercase_mailto}" != "${lowercase_ldap_mail}" ]]
     then
-	echo "INTERNAL ERROR: Searched for \"${mailto}\" and found \"${ldap_mail}\" in ldap" 1>&2
+	echo "INTERNAL ERROR: Searched for \"${mailto}\" and found \"${ldap_mail}\" in ldap.
+Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>&2
 	continue
+	# NOT REACHED
     fi
     
     ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )

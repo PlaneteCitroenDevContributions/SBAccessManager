@@ -101,8 +101,8 @@ do
     # for security, we check that the retrieved mail is what we searched for
     #
     ldap_mail=$( sed -n -e '/^mail: /s/^mail: //p' <<< ${dn_search_result} )
-    lowercase_mailto=$( echo "${mailto}" | tr '[:upper:]' '[:lower:]' )
-    lowercase_ldap_mail$( echo "${ldap_mail}" | tr '[:upper:]' '[:lower:]' )
+    lowercase_mailto=$( tr '[:upper:]' '[:lower:]' <<< ${mailto} )
+    lowercase_ldap_mail$( tr '[:upper:]' '[:lower:]' <<< ${ldap_mail} )
     if [[ "${lowercase_mailto}" != "${lowercase_ldap_mail}" ]]
     then
 	echo "INTERNAL ERROR: Searched for \"${mailto}\" and found \"${ldap_mail}\" in ldap.

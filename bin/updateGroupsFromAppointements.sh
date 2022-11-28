@@ -141,9 +141,20 @@ done
 # revoke all users who did not reserve and are currently allowed
 #
 
-for dn in "${alreadyAllowedLdapDNs_array[@]}"
+for already_allowed_dn in "${alreadyAllowedLdapDNs_array[@]}"
 do
-    if grep -q "${dn}" <<< "${allowedLdapDNs_array[@]}"
+
+    already_allowed_dn_is_still_allowed=false
+    for currently_allowed_dn in "${allowedLdapDNs_array[@]}"
+    do
+	if [[ "${already_allowed_dn}" == "${currently_allowed_dn}" ]]
+	then
+	    already_allowed_dn_is_still_allowed=true
+	    break
+	fi
+    done
+	    
+    if ${already_allowed_dn_is_still_allowed}
     then
 	:
     else

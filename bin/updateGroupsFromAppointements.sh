@@ -126,44 +126,44 @@ readarray alreadyAllowedLdapDNs_array <<< ${already_allowed_ldap_search_result}
 #
 # allow new users who reserved and are not already allowed
 #
-for dn in "${allowedLdapDNs_array[@]}"
+
+appointed_minus_already_allowed_dns=$(
+    
+    for dn in "${alreadyAllowedLdapDNs_array[@]}" "${alreadyAllowedLdapDNs_array[@]}" "${allowedLdapDNs_array[@]}"
+    do
+	echo "${dn}"
+    done | \
+    sort | \
+    uniq -u
+)
+
+readarray new_dns_array <<< ${appointed_minus_already_allowed_dns}
+for dn in "${new_dns_array}"
 do
-    if grep -q "${dn}" <<< ${already_allowed_dns}
-    then
-	# already allowd => skip
-	:
-    else
-	grantServiceBoxAccess "${dn}"
-    fi
+    grantServiceBoxAccess "${dn}"
 done
 
 #
 # revoke all users who did not reserve and are currently allowed
 #
 
-for already_allowed_dn in "${alreadyAllowedLdapDNs_array[@]}"
-do
-
-    already_allowed_dn_is_still_allowed=false
-    for currently_allowed_dn in "${allowedLdapDNs_array[@]}"
+already_allowed_dns_minux_appointed=$(
+    
+    for dn in "${allowedLdapDNs_array[@]}" "${allowedLdapDNs_array[@]}" "${alreadyAllowedLdapDNs_array[@]}"
     do
-	if [[ "${already_allowed_dn}" == "${currently_allowed_dn}" ]]
-	then
-	    already_allowed_dn_is_still_allowed=true
-	    break
-	fi
-    done
-	    
-    if ${already_allowed_dn_is_still_allowed}
-    then
-	:
-    else
-	revokeServiceBoxAccess "${dn}"
-    fi
+	echo "${dn}"
+    done | \
+    sort | \
+    uniq -u
+)
+
+readarray terminated_dns_array <<< ${already_allowed_dns_minux_appointed}
+for dn in "${terminated_dns_array[@]}"
+do
+    revokeServiceBoxAccess "${dn}"
 done
 
 (
     echo "INFO: currently allowed DNs"
     ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}"
 ) 1>&2
-

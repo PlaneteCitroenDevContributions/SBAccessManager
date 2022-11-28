@@ -120,9 +120,7 @@ done
 
 allowed_DNs_ldap_search_result=$(
     ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
-	sed -n -e '/^dn: /s/^dn: //p' | \
-	sed -e '/^$/d' )
-allowed_DNs_ldap_search_result=''
+	sed -n -e '/^dn: /s/^dn: //p' )
 echo "${allowed_DNs_ldap_search_result}" | readarray allowedDNs_array
 															      
 #
@@ -142,7 +140,7 @@ appointed_minus_allowed_DNs=$(
 )
 echo "${appointed_minus_allowed_DNs}" | readarray new_DNs_array
 
-for dn in "${new_DNs_array}"
+for dn in "${new_DNs_array[@]}"
 do
     grantServiceBoxAccess "${dn}"
 done
@@ -160,7 +158,7 @@ allowed_DNs_minus_appointed=$(
     sort | \
     uniq -u
 )
-readarray terminated_DNs_array <<< ${allowed_DNs_minus_appointed}
+echo "${allowed_DNs_minus_appointed}" | readarray terminated_DNs_array
 
 for dn in "${terminated_DNs_array[@]}"
 do

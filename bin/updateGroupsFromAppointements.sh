@@ -145,19 +145,11 @@ appointed_minus_allowed_DNs=$(
     uniq -u
 )
 
-echo "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT ${appointed_minus_allowed_DNs}"
-
-set -v
 declare -a new_DNs_array=()
-echo "WWWWWWWW ${appointed_minus_allowed_DNs} LLLLLLLLLLLLLLLLLLL"
 if [[ -n "${appointed_minus_allowed_DNs}" ]]
 then
     readarray new_DNs_array <<< "${appointed_minus_allowed_DNs}"
 fi
-
-echo "YYYYYYYYYYYYYYYYY ${new_DNs_array[@]}"
-set +v
-
 
 for dn in "${new_DNs_array[@]}"
 do

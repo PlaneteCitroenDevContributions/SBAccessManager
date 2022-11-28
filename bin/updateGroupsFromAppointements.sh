@@ -127,8 +127,6 @@ echo "${allowed_DNs_ldap_search_result}" | readarray allowedDNs_array
 # allow new users who reserved and are not already allowed
 #
 
-echo "X${allowedDNs_array[@]}Y${appointedDNs_array[@]}Z"
-
 appointed_minus_allowed_DNs=$(
     
     for dn in "${allowedDNs_array[@]}" "${allowedDNs_array[@]}" "${appointedDNs_array[@]}"

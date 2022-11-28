@@ -120,8 +120,9 @@ done
 
 # FIXME: rename this var
 # TODO: must be converted to an array
-already_allowed_dns=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e '/^dn: /s/^dn: //' )
-
+already_allowed_ldap_search_result=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e '/^dn: /s/^dn: //' )
+readarray alreadyAllowedLdapDNs_array <<< ${already_allowed_ldap_search_result}
+															      
 #
 # allow new users who reserved and are not already allowed
 #
@@ -140,7 +141,7 @@ done
 # revoke all users who did not reserve and are currently allowed
 #
 
-for dn in ${already_allowed_dns}
+for dn in "${alreadyAllowedLdapDNs_array[@]}"
 do
     if grep -q "${dn}" <<< "${allowedLdapDNs_array[@]}"
     then

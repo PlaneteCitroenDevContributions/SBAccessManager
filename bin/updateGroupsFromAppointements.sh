@@ -118,12 +118,18 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 
 done
 
-allowed_DNs_ldap_search_result=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -n -e '/^dn: /s/^dn: //p' )
-readarray allowedDNs_array <<< ${allowed_DNs_ldap_search_result}
+allowed_DNs_ldap_search_result=$(
+    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
+	sed -n -e '/^dn: /s/^dn: //p' | \
+	sed -e '/^$/d' )
+allowed_DNs_ldap_search_result=''
+echo "${allowed_DNs_ldap_search_result}" | readarray allowedDNs_array
 															      
 #
 # allow new users who reserved and are not already allowed
 #
+
+echo "X${allowedDNs_array[@]}Y${appointedDNs_array[@]}Z"
 
 appointed_minus_allowed_DNs=$(
     
@@ -134,7 +140,7 @@ appointed_minus_allowed_DNs=$(
     sort | \
     uniq -u
 )
-readarray new_DNs_array <<< ${appointed_minus_allowed_DNs}
+echo "${appointed_minus_allowed_DNs}" | readarray new_DNs_array
 
 for dn in "${new_DNs_array}"
 do

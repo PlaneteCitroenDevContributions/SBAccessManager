@@ -62,7 +62,7 @@ ics_url_list=$(
 # search for all users who reserved
 #
 
-declare -a allowedLdapDNs_array=()
+declare -a appointedDNs_array=()
 
 for ics_url in $( echo "${ics_url_list}" )
 do
@@ -112,16 +112,16 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 	# NOT REACHED
     fi
     
-    ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
+    dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    allowedLdapDNs_array+=( "${ldap_dn}" )
+    appointedDNs_array+=( "${dn}" )
 
 done
 
 # FIXME: rename this var
 # TODO: must be converted to an array
 already_allowed_ldap_search_result=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e '/^dn: /s/^dn: //' )
-readarray alreadyAllowedLdapDNs_array <<< ${already_allowed_ldap_search_result}
+readarray alreadyAllowedDNs_array <<< ${already_allowed_ldap_search_result}
 															      
 #
 # allow new users who reserved and are not already allowed
@@ -129,7 +129,7 @@ readarray alreadyAllowedLdapDNs_array <<< ${already_allowed_ldap_search_result}
 
 appointed_minus_already_allowed_dns=$(
     
-    for dn in "${alreadyAllowedLdapDNs_array[@]}" "${alreadyAllowedLdapDNs_array[@]}" "${allowedLdapDNs_array[@]}"
+    for dn in "${alreadyAllowedDNs_array[@]}" "${alreadyAllowedDNs_array[@]}" "${allowedDNs_array[@]}"
     do
 	echo "${dn}"
     done | \
@@ -149,7 +149,7 @@ done
 
 already_allowed_dns_minux_appointed=$(
     
-    for dn in "${allowedLdapDNs_array[@]}" "${allowedLdapDNs_array[@]}" "${alreadyAllowedLdapDNs_array[@]}"
+    for dn in "${allowedDNs_array[@]}" "${allowedDNs_array[@]}" "${alreadyAllowedDNs_array[@]}"
     do
 	echo "${dn}"
     done | \

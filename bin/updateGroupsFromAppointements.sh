@@ -118,7 +118,7 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 
 done
 
-allowed_DNs_ldap_search_result=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e '/^dn: /s/^dn: //' )
+allowed_DNs_ldap_search_result=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -n -e '/^dn: /s/^dn: //p' )
 readarray allowedDNs_array <<< ${allowed_DNs_ldap_search_result}
 															      
 #
@@ -154,7 +154,7 @@ allowed_DNs_minus_appointed=$(
     sort | \
     uniq -u
 )
-readarray terminated_DNs_array <<< ${allowed_dns_minux_appointed}
+readarray terminated_DNs_array <<< ${allowed_DNs_minus_appointed}
 
 for dn in "${terminated_DNs_array[@]}"
 do

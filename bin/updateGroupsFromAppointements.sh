@@ -118,16 +118,14 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 
 done
 
-# FIXME: rename this var
-# TODO: must be converted to an array
-already_allowed_ldap_search_result=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e '/^dn: /s/^dn: //' )
-readarray alreadyAllowedDNs_array <<< ${already_allowed_ldap_search_result}
+allowed_ldap_search_result=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e '/^dn: /s/^dn: //' )
+readarray alreadyAllowedDNs_array <<< ${allowed_ldap_search_result}
 															      
 #
 # allow new users who reserved and are not already allowed
 #
 
-appointed_minus_already_allowed_dns=$(
+appointed_minus_allowed_dns=$(
     
     for dn in "${alreadyAllowedDNs_array[@]}" "${alreadyAllowedDNs_array[@]}" "${allowedDNs_array[@]}"
     do
@@ -137,7 +135,7 @@ appointed_minus_already_allowed_dns=$(
     uniq -u
 )
 
-readarray new_dns_array <<< ${appointed_minus_already_allowed_dns}
+readarray new_dns_array <<< ${appointed_minus_allowed_dns}
 for dn in "${new_dns_array}"
 do
     grantServiceBoxAccess "${dn}"
@@ -147,7 +145,7 @@ done
 # revoke all users who did not reserve and are currently allowed
 #
 
-already_allowed_dns_minux_appointed=$(
+allowed_dns_minux_appointed=$(
     
     for dn in "${allowedDNs_array[@]}" "${allowedDNs_array[@]}" "${alreadyAllowedDNs_array[@]}"
     do
@@ -157,7 +155,7 @@ already_allowed_dns_minux_appointed=$(
     uniq -u
 )
 
-readarray terminated_dns_array <<< ${already_allowed_dns_minux_appointed}
+readarray terminated_dns_array <<< ${allowed_dns_minux_appointed}
 for dn in "${terminated_dns_array[@]}"
 do
     revokeServiceBoxAccess "${dn}"

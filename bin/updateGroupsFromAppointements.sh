@@ -15,6 +15,9 @@ export LANG='en_US.utf8'
 
 : ${ALLOWING_LDAP_GROUP_NAME:='ServiceBoxAllowed'}
 
+#FIXME: for test
+ALLOWING_LDAP_GROUP_NAME='_DEV_TEST_'
+
 : ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
 
 getVCalData ()
@@ -121,7 +124,12 @@ done
 allowed_DNs_ldap_search_result=$(
     ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
 	sed -n -e '/^dn: /s/^dn: //p' )
-echo "${allowed_DNs_ldap_search_result}" | readarray allowedDNs_array
+
+declare -a allowedDNs_array=()
+if [[ -n "${allowed_DNs_ldap_search_result}" ]]
+then
+    readarray allowedDNs_array <<< "${allowed_DNs_ldap_search_result}"
+fi
 															      
 #
 # allow new users who reserved and are not already allowed
@@ -136,7 +144,20 @@ appointed_minus_allowed_DNs=$(
     sort | \
     uniq -u
 )
-echo "${appointed_minus_allowed_DNs}" | readarray new_DNs_array
+
+echo "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT ${appointed_minus_allowed_DNs}"
+
+set -v
+declare -a new_DNs_array=()
+echo "WWWWWWWW ${appointed_minus_allowed_DNs} LLLLLLLLLLLLLLLLLLL"
+if [[ -n "${appointed_minus_allowed_DNs}" ]]
+then
+    readarray new_DNs_array <<< "${appointed_minus_allowed_DNs}"
+fi
+
+echo "YYYYYYYYYYYYYYYYY ${new_DNs_array[@]}"
+set +v
+
 
 for dn in "${new_DNs_array[@]}"
 do
@@ -156,7 +177,11 @@ allowed_DNs_minus_appointed=$(
     sort | \
     uniq -u
 )
-echo "${allowed_DNs_minus_appointed}" | readarray terminated_DNs_array
+declare -a terminated_DNs_array=()
+if [[ "${allowed_DNs_minus_appointed}" ]]
+then
+    readarray terminated_DNs_array <<< "${allowed_DNs_minus_appointed}"
+fi
 
 for dn in "${terminated_DNs_array[@]}"
 do

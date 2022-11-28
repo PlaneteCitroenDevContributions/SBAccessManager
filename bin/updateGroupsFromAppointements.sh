@@ -62,7 +62,7 @@ ics_url_list=$(
 # search for all users who reserved
 #
 
-declare -a allowedLdapDNs=()
+declare -a allowedLdapDNs_array=()
 
 for ics_url in $( echo "${ics_url_list}" )
 do
@@ -114,7 +114,7 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
     
     ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    allowedLdapDNs+=("${ldap_dn}")
+    allowedLdapDNs_array+=( "${ldap_dn}" )
 
 done
 
@@ -125,7 +125,7 @@ already_allowed_dns=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" 
 #
 # allow new users who reserved and are not already allowed
 #
-for dn in "${allowedLdapDNs[@]}"
+for dn in "${allowedLdapDNs_array[@]}"
 do
     if grep -q "${dn}" <<< ${already_allowed_dns}
     then
@@ -142,7 +142,7 @@ done
 
 for dn in ${already_allowed_dns}
 do
-    if grep -q "${dn}" <<< "${allowedLdapDNs[@]}"
+    if grep -q "${dn}" <<< "${allowedLdapDNs_array[@]}"
     then
 	:
     else

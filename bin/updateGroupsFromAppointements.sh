@@ -118,6 +118,14 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 
 done
 
+(
+    echo "INFO: currently appointed DNs"
+    for dn in "${appointed_DNs_array[@]}"
+    do
+	echo "	${dn}"
+    done
+) 1>&2
+
 allowed_DNs_ldap_search_result=$(
     ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
 	sed -n -e '/^dn: /s/^dn: //p' )
@@ -151,6 +159,9 @@ fi
 for dn in "${new_DNs_array[@]}"
 do
     grantServiceBoxAccess "${dn}"
+    (
+	echo "INFO: granted acces to ${dn}"
+    ) 1>&2
 done
 
 #
@@ -175,6 +186,9 @@ fi
 for dn in "${terminated_DNs_array[@]}"
 do
     revokeServiceBoxAccess "${dn}"
+    (
+	echo "INFO: revoked acces to ${dn}"
+    ) 1>&2
 done
 
 (

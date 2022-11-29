@@ -122,10 +122,10 @@ allowed_DNs_ldap_search_result=$(
     ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
 	sed -n -e '/^dn: /s/^dn: //p' )
 
-declare -a allowedDNs_array=()
+declare -a allowed_DNs_array=()
 if [[ -n "${allowed_DNs_ldap_search_result}" ]]
 then
-    readarray allowedDNs_array <<< "${allowed_DNs_ldap_search_result}"
+    readarray allowed_DNs_array <<< "${allowed_DNs_ldap_search_result}"
 fi
 															      
 #
@@ -134,7 +134,7 @@ fi
 
 appointed_minus_allowed_DNs=$(
     
-    for dn in "${allowedDNs_array[@]}" "${allowedDNs_array[@]}" "${appointed_DNs_array[@]}"
+    for dn in "${allowed_DNs_array[@]}" "${allowed_DNs_array[@]}" "${appointed_DNs_array[@]}"
     do
 	echo "${dn}"
     done | \
@@ -159,7 +159,7 @@ done
 
 allowed_DNs_minus_appointed=$(
     
-    for dn in "${appointed_DNs_array[@]}" "${appointed_DNs_array[@]}" "${allowedDNs_array[@]}"
+    for dn in "${appointed_DNs_array[@]}" "${appointed_DNs_array[@]}" "${allowed_DNs_array[@]}"
     do
 	echo "${dn}"
     done | \

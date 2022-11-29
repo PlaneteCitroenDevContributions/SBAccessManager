@@ -15,9 +15,6 @@ export LANG='en_US.utf8'
 
 : ${ALLOWING_LDAP_GROUP_NAME:='ServiceBoxAllowed'}
 
-#FIXME: for test
-ALLOWING_LDAP_GROUP_NAME='_DEV_TEST_'
-
 : ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
 
 getVCalData ()

@@ -62,7 +62,7 @@ ics_url_list=$(
 # search for all users who reserved
 #
 
-declare -a appointedDNs_array=()
+declare -a appointed_DNs_array=()
 
 for ics_url in $( echo "${ics_url_list}" )
 do
@@ -114,7 +114,7 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
     
     dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    appointedDNs_array+=( "${dn}" )
+    appointed_DNs_array+=( "${dn}" )
 
 done
 
@@ -134,7 +134,7 @@ fi
 
 appointed_minus_allowed_DNs=$(
     
-    for dn in "${allowedDNs_array[@]}" "${allowedDNs_array[@]}" "${appointedDNs_array[@]}"
+    for dn in "${allowedDNs_array[@]}" "${allowedDNs_array[@]}" "${appointed_DNs_array[@]}"
     do
 	echo "${dn}"
     done | \
@@ -159,7 +159,7 @@ done
 
 allowed_DNs_minus_appointed=$(
     
-    for dn in "${appointedDNs_array[@]}" "${appointedDNs_array[@]}" "${allowedDNs_array[@]}"
+    for dn in "${appointed_DNs_array[@]}" "${appointed_DNs_array[@]}" "${allowedDNs_array[@]}"
     do
 	echo "${dn}"
     done | \

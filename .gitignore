@@ -7,7 +7,7 @@
 /pwdfile.txt
 /.env
 /dav_config.env
-/test*.env
+/_test*.env
 
 
 

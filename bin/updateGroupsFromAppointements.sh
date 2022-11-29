@@ -62,7 +62,8 @@ ics_url_list=$(
 # search for all users who reserved
 #
 
-allowedLdapDNs=''
+declare -a appointed_DNs_array=()
+
 for ics_url in $( echo "${ics_url_list}" )
 do
 
@@ -111,45 +112,86 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 	# NOT REACHED
     fi
     
-    ldap_dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
+    dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    allowedLdapDNs="${allowedLdapDNs} ${ldap_dn}"
+    appointed_DNs_array+=( "${dn}" )
 
 done
 
-# FIXME: rename this var
-already_allowed_dns=$( ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e '/^dn: /s/^dn: //' )
+(
+    echo "INFO: currently appointed DNs"
+    for dn in "${appointed_DNs_array[@]}"
+    do
+	echo "	${dn}"
+    done
+) 1>&2
 
+allowed_DNs_ldap_search_result=$(
+    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
+	sed -n -e '/^dn: /s/^dn: //p' )
+
+declare -a allowed_DNs_array=()
+if [[ -n "${allowed_DNs_ldap_search_result}" ]]
+then
+    readarray allowed_DNs_array <<< "${allowed_DNs_ldap_search_result}"
+fi
+															      
 #
 # allow new users who reserved and are not already allowed
 #
-for dn in ${allowedLdapDNs}
+
+appointed_minus_allowed_DNs=$(
+    
+    for dn in "${allowed_DNs_array[@]}" "${allowed_DNs_array[@]}" "${appointed_DNs_array[@]}"
+    do
+	echo "${dn}"
+    done | \
+    sort | \
+    uniq -u
+)
+
+declare -a new_DNs_array=()
+if [[ -n "${appointed_minus_allowed_DNs}" ]]
+then
+    readarray new_DNs_array <<< "${appointed_minus_allowed_DNs}"
+fi
+
+for dn in "${new_DNs_array[@]}"
 do
-    if grep -q "${dn}" <<< ${already_allowed_dns}
-    then
-	# already allowd => skip
-	:
-    else
-	grantServiceBoxAccess "${dn}"
-    fi
+    grantServiceBoxAccess "${dn}"
+    (
+	echo "INFO: granted acces to ${dn}"
+    ) 1>&2
 done
 
 #
 # revoke all users who did not reserve and are currently allowed
 #
 
-for dn in ${already_allowed_dns}
+allowed_DNs_minus_appointed=$(
+    
+    for dn in "${appointed_DNs_array[@]}" "${appointed_DNs_array[@]}" "${allowed_DNs_array[@]}"
+    do
+	echo "${dn}"
+    done | \
+    sort | \
+    uniq -u
+)
+declare -a terminated_DNs_array=()
+if [[ "${allowed_DNs_minus_appointed}" ]]
+then
+    readarray terminated_DNs_array <<< "${allowed_DNs_minus_appointed}"
+fi
+
+for dn in "${terminated_DNs_array[@]}"
 do
-    if grep -q "${dn}" <<< ${allowedLdapDNs}
-    then
-	:
-    else
-	revokeServiceBoxAccess "${dn}"
-    fi
+    revokeServiceBoxAccess "${dn}"
+    (
+	echo "INFO: revoked acces to ${dn}"
+    ) 1>&2
 done
 
 (
     echo "INFO: currently allowed DNs"
     ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}"
 ) 1>&2
-

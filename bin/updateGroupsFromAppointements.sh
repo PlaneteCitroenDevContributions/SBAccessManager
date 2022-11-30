@@ -127,10 +127,13 @@ done
 ) 1>&2
 
 allowed_DNs_ldap_search_result=$(
-    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
-	sed -e '/^[ \t]*$/d' | \
-	sed -n -e '/^dn: /s/^dn: //p' )
 
+    # dsidm may return line with empty DNs => remove these empty lines
+
+    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
+	sed -n -e '/^dn: /s/^dn: //p' | \
+	sed -e '/^[ \t]*$/d' )
+# store result in array
 declare -a allowed_DNs_array=()
 for dn in ${allowed_DNs_ldap_search_result}
 do
@@ -154,7 +157,7 @@ appointed_minus_allowed_DNs=$(
     sort | \
     uniq -u
 )
-
+# store result in array
 declare -a new_DNs_array=()
 for dn in ${appointed_minus_allowed_DNs}
 do
@@ -187,11 +190,13 @@ allowed_DNs_minus_appointed=$(
     sort | \
     uniq -u
 )
+# store result in array
 declare -a terminated_DNs_array=()
-if [[ "${allowed_DNs_minus_appointed}" ]]
-then
-    readarray terminated_DNs_array <<< "${allowed_DNs_minus_appointed}"
-fi
+for dn in ${allowed_DNs_minus_appointed}
+do
+    echo "XXXXXXXXXXXXXXXXX${dn}XXXXXXXXXXXXXXXXXXXXX==============" 1>&2
+    terminated_DNs_array+=( "${dn}" )
+done
 
 for dn in "${terminated_DNs_array[@]}"
 do

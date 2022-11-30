@@ -161,7 +161,6 @@ appointed_minus_allowed_DNs=$(
 declare -a new_DNs_array=()
 for dn in ${appointed_minus_allowed_DNs}
 do
-    echo "=================${dn}====================" 1>&2
     new_DNs_array+=( "${dn}" )
 done
 
@@ -194,7 +193,6 @@ allowed_DNs_minus_appointed=$(
 declare -a terminated_DNs_array=()
 for dn in ${allowed_DNs_minus_appointed}
 do
-    echo "XXXXXXXXXXXXXXXXX${dn}XXXXXXXXXXXXXXXXXXXXX==============" 1>&2
     terminated_DNs_array+=( "${dn}" )
 done
 

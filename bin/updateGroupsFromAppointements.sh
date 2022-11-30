@@ -122,19 +122,24 @@ done
     echo "INFO: currently appointed DNs"
     for dn in "${appointed_DNs_array[@]}"
     do
-	echo "	${dn}"
+	echo "	\"${dn}\""
     done
 ) 1>&2
 
 allowed_DNs_ldap_search_result=$(
     ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
+	sed -e '/^[ \t]*$/d' | \
 	sed -n -e '/^dn: /s/^dn: //p' )
 
 declare -a allowed_DNs_array=()
-if [[ -n "${allowed_DNs_ldap_search_result}" ]]
-then
-    readarray allowed_DNs_array <<< "${allowed_DNs_ldap_search_result}"
-fi
+for dn in ${allowed_DNs_ldap_search_result}
+do
+    allowed_DNs_array+=( "${dn}" )
+done
+# if [[ -n "${allowed_DNs_ldap_search_result}" ]]
+# then
+#     readarray allowed_DNs_array <<< "${allowed_DNs_ldap_search_result}"
+# fi
 															      
 #
 # allow new users who reserved and are not already allowed
@@ -151,10 +156,15 @@ appointed_minus_allowed_DNs=$(
 )
 
 declare -a new_DNs_array=()
-if [[ -n "${appointed_minus_allowed_DNs}" ]]
-then
-    readarray new_DNs_array <<< "${appointed_minus_allowed_DNs}"
-fi
+for dn in ${appointed_minus_allowed_DNs}
+do
+    echo "=================${dn}====================" 1>&2
+    new_DNs_array+=( "${dn}" )
+done
+
+#
+# grant access to appointed DNs not already granted
+#
 
 for dn in "${new_DNs_array[@]}"
 do

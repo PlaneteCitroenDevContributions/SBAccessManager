@@ -143,7 +143,7 @@ declare -a allowed_DNs_array=()
 for dn in ${allowed_DNs_ldap_search_result}
 do
     allowed_DNs_array+=( "${dn}" )
-    echo "=======================${dn}======================"
+    echo "=ALLOWED FROM LDAP SEARCH======================${dn}======================"
 done
 if [[ -n "${allowed_DNs_ldap_search_result}" ]]
 then
@@ -163,7 +163,7 @@ do
 
     echo "!!!!!!!!!!!!!!!!!!!!${i}!!!!!!!!!!!!!!!!!!!!!!!"
 done
-exit 1
+
 
 appointed_minus_allowed_DNs=$(
     
@@ -175,12 +175,10 @@ appointed_minus_allowed_DNs=$(
     uniq -u
 )
 # store result in array
-declare -a new_DNs_array=()
-for dn in ${appointed_minus_allowed_DNs}
-do
-    new_DNs_array+=( "${dn}" )
-done
-
+declare -a  new_DNs_array=()
+while IFS= read -r line; do
+    new_DNs_array+=( "${line}" )
+done <<< ${appointed_minus_allowed_DNs}
 
 
 

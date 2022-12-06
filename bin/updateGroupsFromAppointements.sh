@@ -147,13 +147,6 @@ done <<< ${allowed_DNs_ldap_search_result}
 # allow new users who reserved and are not already allowed
 #
 
-for i in "${allowed_DNs_ldap_search_result[@]}"
-do
-
-    echo "!!!!!!!!!!!!!!!!!!!!${i}!!!!!!!!!!!!!!!!!!!!!!!"
-done
-
-
 appointed_minus_allowed_DNs=$(
     
     for dn in "${allowed_DNs_array[@]}" "${allowed_DNs_array[@]}" "${appointed_DNs_array[@]}"

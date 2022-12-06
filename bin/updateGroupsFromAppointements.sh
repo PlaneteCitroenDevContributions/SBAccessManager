@@ -195,6 +195,10 @@ for dn in ${allowed_DNs_minus_appointed}
 do
     terminated_DNs_array+=( "${dn}" )
 done
+declare -a  terminated_DNs_array=()
+while IFS= read -r line; do
+    terminated_DNs_array+=( "${line}" )
+done <<< ${allowed_DNs_minus_appointed}
 
 for dn in "${terminated_DNs_array[@]}"
 do

@@ -140,17 +140,6 @@ allowed_DNs_ldap_search_result=$(
 	sed -e '/^[ \t]*$/d' )
 # store result in array
 declare -a allowed_DNs_array=()
-for dn in ${allowed_DNs_ldap_search_result}
-do
-    allowed_DNs_array+=( "${dn}" )
-    echo "=ALLOWED FROM LDAP SEARCH======================${dn}======================"
-done
-if [[ -n "${allowed_DNs_ldap_search_result}" ]]
-then
-    readarray allowed_DNs_array <<< "${allowed_DNs_ldap_search_result}"
-fi
-															      
-declare -a allowed_DNs_array=()
 while IFS= read -r line; do
     allowed_DNs_array+=( "${line}" )
 done <<< ${allowed_DNs_ldap_search_result}

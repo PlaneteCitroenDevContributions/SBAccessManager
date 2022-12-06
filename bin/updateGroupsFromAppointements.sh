@@ -30,7 +30,9 @@ getVCalData ()
 	code=$(
 	    curl \
 	       --silent --show-error -w '%{http_code}' -o /tmp/response.txt \
-	       -u ${CALDAV_USERNAME}:${CALDAV_PASSWORD} -H 'Accept: text/calendar' -H 'Accept-Charset: utf-8' "${ics_url}" )
+	       -u ${CALDAV_USERNAME}:${CALDAV_PASSWORD} -H 'Accept: text/calendar' -H 'Accept-Charset: utf-8' "${ics_url}"'?export' )
+	#!!!!! FIXME: remove this patch
+	cp /tmp/response.txt /tmp/curl_out.txt
 	# put everything on a single line
 	sed -z 's/\r\n\ //g' /tmp/response.txt
     )
@@ -54,9 +56,14 @@ revokeServiceBoxAccess ()
 }
 
 
-ics_url_list=$(
-    ${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" 2>/dev/null
-)
+if [[ -z "${TEST_ICS_URL_LIST}" ]]
+then
+    ics_url_list=$(
+	${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" 2>/dev/null
+    )
+else
+    ics_url_list="${TEST_ICS_URL_LIST}"
+fi
 
 #
 # search for all users who reserved
@@ -138,15 +145,27 @@ declare -a allowed_DNs_array=()
 for dn in ${allowed_DNs_ldap_search_result}
 do
     allowed_DNs_array+=( "${dn}" )
+    echo "=======================${dn}======================"
 done
-# if [[ -n "${allowed_DNs_ldap_search_result}" ]]
-# then
-#     readarray allowed_DNs_array <<< "${allowed_DNs_ldap_search_result}"
-# fi
+if [[ -n "${allowed_DNs_ldap_search_result}" ]]
+then
+    readarray allowed_DNs_array <<< "${allowed_DNs_ldap_search_result}"
+fi
 															      
+declare -a allowed_DNs_array=()
+while IFS= read -r line; do
+    allowed_DNs_array+=( "${line}" )
+done <<< ${allowed_DNs_ldap_search_result}
 #
 # allow new users who reserved and are not already allowed
 #
+
+for i in "${allowed_DNs_ldap_search_result[@]}"
+do
+
+    echo "!!!!!!!!!!!!!!!!!!!!${i}!!!!!!!!!!!!!!!!!!!!!!!"
+done
+exit 1
 
 appointed_minus_allowed_DNs=$(
     
@@ -163,6 +182,9 @@ for dn in ${appointed_minus_allowed_DNs}
 do
     new_DNs_array+=( "${dn}" )
 done
+
+
+
 
 #
 # grant access to appointed DNs not already granted

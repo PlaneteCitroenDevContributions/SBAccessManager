@@ -5,7 +5,7 @@ services:
       build: .
       restart: unless-stopped
       environment:
-         - DELAY=20s
+         - DELAY=${DELAY-20s}
          - CALDAV_PRINCIPAL_URL=${CALDAV_PRINCIPAL_URL}
          - CALDAV_USERNAME=${CALDAV_USERNAME}
          - CALDAV_PASSWORD=${CALDAV_PASSWORD}

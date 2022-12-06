@@ -31,8 +31,6 @@ getVCalData ()
 	    curl \
 	       --silent --show-error -w '%{http_code}' -o /tmp/response.txt \
 	       -u ${CALDAV_USERNAME}:${CALDAV_PASSWORD} -H 'Accept: text/calendar' -H 'Accept-Charset: utf-8' "${ics_url}"'?export' )
-	#!!!!! FIXME: remove this patch
-	cp /tmp/response.txt /tmp/curl_out.txt
 	# put everything on a single line
 	sed -z 's/\r\n\ //g' /tmp/response.txt
     )

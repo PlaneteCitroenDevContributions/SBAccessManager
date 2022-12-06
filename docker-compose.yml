@@ -12,6 +12,7 @@ services:
          - SERVICE_BOX_CALENDAR_NAME=${SERVICE_BOX_CALENDAR_NAME}
          - ALLOWING_LDAP_GROUP_NAME=${ALLOWING_LDAP_GROUP_NAME}
          - SHELL_DEBUG=${SHELL_DEBUG:-}
+         - TEST_ICS_URL_LIST=${TEST_ICS_URL_LIST}
       volumes:
          - ./dsrc.txt:/data/config/container.inf:ro
          - ./pwdfile.txt:/etc/pwdfile.txt:ro

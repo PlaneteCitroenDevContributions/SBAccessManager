@@ -141,7 +141,11 @@ allowed_DNs_ldap_search_result=$(
 # store result in array
 declare -a allowed_DNs_array=()
 while IFS= read -r line; do
-    allowed_DNs_array+=( "${line}" )
+    # skip eventual empty lines
+    if [[ -n "${line}" ]]
+    then
+	allowed_DNs_array+=( "${line}" )
+    fi
 done <<< ${allowed_DNs_ldap_search_result}
 #
 # allow new users who reserved and are not already allowed
@@ -159,7 +163,11 @@ appointed_minus_allowed_DNs=$(
 # store result in array
 declare -a  new_DNs_array=()
 while IFS= read -r line; do
-    new_DNs_array+=( "${line}" )
+    # skip eventual empty lines
+    if [[ -n "${line}" ]]
+    then
+	new_DNs_array+=( "${line}" )
+    fi
 done <<< ${appointed_minus_allowed_DNs}
 
 
@@ -192,7 +200,11 @@ allowed_DNs_minus_appointed=$(
 # store result in array
 declare -a  terminated_DNs_array=()
 while IFS= read -r line; do
-    terminated_DNs_array+=( "${line}" )
+    # skip eventual empty lines
+    if [[ -n "${line}" ]]
+    then
+	terminated_DNs_array+=( "${line}" )
+    fi
 done <<< ${allowed_DNs_minus_appointed}
 
 for dn in "${terminated_DNs_array[@]}"

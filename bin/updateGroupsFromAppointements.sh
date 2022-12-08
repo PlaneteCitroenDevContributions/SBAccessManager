@@ -86,7 +86,7 @@ do
     mailto=$( echo "${organizer_data}" | sed -e 's/.*:mailto:\(.*\)$/\1/' )
 
     (
-	echo "INFO: display Name \"${displayName}\" with email \"${mailto}\" has reserved"
+	echo "INFO: found appointment for display Name \"${displayName}\" with email \"${mailto}\""
     ) 1>&2
 
     # retrieve user description (dn + mail) in LDAP, based on his email address (mailto)
@@ -180,7 +180,7 @@ for dn in "${new_DNs_array[@]}"
 do
     grantServiceBoxAccess "${dn}"
     (
-	echo "INFO: granted acces to ${dn}"
+	echo "INFO: granted acces to DN \"${dn}\""
     ) 1>&2
 done
 
@@ -211,11 +211,11 @@ for dn in "${terminated_DNs_array[@]}"
 do
     revokeServiceBoxAccess "${dn}"
     (
-	echo "INFO: revoked acces to ${dn}"
+	echo "INFO: revoked acces to DN \"${dn}\""
     ) 1>&2
 done
 
 (
-    echo "INFO: currently allowed DNs"
-    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}"
+    echo "INFO: current members of LDAP group \"${ALLOWING_LDAP_GROUP_NAME}\""
+    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e 's/^/\t==>/'
 ) 1>&2

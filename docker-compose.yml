@@ -26,5 +26,5 @@ services:
 networks:
 
    internal_services:
-      external:
-         name: internal_services
+      external: true
+      name: internal_services

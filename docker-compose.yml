@@ -19,7 +19,7 @@ services:
       command:
          - bash
          - -c
-         - 'while true; do /code/bin/updateGroupsFromAppointements.sh; ( echo "INFO: ==================== Next check in $${DELAY} ====================" ; echo "INFO: $$( date )" ) 1>&2; sleep $${DELAY}; done'
+         - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/updateGroupsFromAppointements.sh; echo "INFO: ==================== Next check in $${DELAY} ====================" 1>&2; sleep $${DELAY}; done'
       networks:
          - internal_services
 

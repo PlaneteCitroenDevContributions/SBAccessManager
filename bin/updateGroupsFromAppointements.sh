@@ -64,6 +64,31 @@ else
 fi
 
 #
+# search in appointments if there is one which enables reservation
+#
+for ics_url in $( echo "${ics_url_list}" )
+do
+
+    vcal_data=$( getVCalData ${ics_url} )
+
+    organizer_line=$(
+	echo "${vcal_data}" | grep -e '^ORGANIZER;'
+		  )
+    if [[ -z "${organizer_line}" ]]
+    then
+	(
+	    echo "INFO: found appointment without ORANIZER => it is myself (\"${CALDAV_USERNAME}\")"
+	) 1>&2
+
+
+	#
+	# TODO: this case enables reservation
+	# NYI
+    fi
+
+done
+
+#
 # search for all users who reserved
 #
 

@@ -53,7 +53,6 @@ revokeServiceBoxAccess ()
     ${dsidm_cmd} group remove_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
 }
 
-
 if [[ -z "${TEST_ICS_URL_LIST}" ]]
 then
     ics_url_list=$(
@@ -114,7 +113,7 @@ then
     for ics_url in $( echo "${ics_url_list}" )
     do
 
-	if [[ "${ics_url}" == "${_unlocking_appointment_icl_url}" ]]
+	if [[ "${ics_url}" == "${_unlocking_appointment_ics_url}" ]]
 	then
 	    # skip this appointment since it is the one which is used to unlock reservation
 	    continue

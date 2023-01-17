@@ -64,11 +64,13 @@ else
 fi
 
 #
-# search in appointments if there is one which enables reservation
+# search in appointments if there is one which unlocks reservation
 #
 
+# holds the url of the appointment which unlocks reservation
 _unlocking_appointment_ics_url=''
 
+# search for an appointment which is considered to unlock reservation
 for ics_url in $( echo "${ics_url_list}" )
 do
 
@@ -79,6 +81,7 @@ do
 		  )
     if [[ -z "${organizer_line}" ]]
     then
+	# we simply consider that if CALDAV_USERNAME (no ORGANIZER) has made an appointment himself, this is enough to unlock reservations
 	(
 	    echo "INFO: found appointment without ORGANIZER => it is myself (\"${CALDAV_USERNAME}\")"
 	    echo "INFO: this appointment \"${ics_url}\" will be considered as the unlocking appointment"
@@ -91,6 +94,12 @@ do
     fi
 
 done
+
+
+#
+# manage access for users
+# =======================
+#
 
 #
 # search for all users who reserved

@@ -120,7 +120,7 @@ then
 	if [[ -z "${organizer_line}" ]]
 	then
 	    # this is not an appointment which can be used for reservation,
-	    # since we need an ORANIZER
+	    # since we need an ORGANIZER
 	    (
 		echo "INFO: appointment \"${ics_url}\" has no organizer. Skip it"
 	    ) 1>&2

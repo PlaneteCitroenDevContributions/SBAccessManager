@@ -67,8 +67,7 @@ fi
 # search in appointments if there is one which enables reservation
 #
 
-_unlocking_appoitment_found=false
-_unlocking_appointment_icl_url=''
+_unlocking_appointment_ics_url=''
 
 for ics_url in $( echo "${ics_url_list}" )
 do
@@ -82,10 +81,12 @@ do
     then
 	(
 	    echo "INFO: found appointment without ORGANIZER => it is myself (\"${CALDAV_USERNAME}\")"
+	    echo "INFO: this appointment \"${ics_url}\" will be considered as the unlocking appointment"
 	) 1>&2
 
-	_unlocking_appoitment_found=true
-	_unlocking_appointment_icl_url="${ics_url}"
+	_unlocking_appointment_ics_url="${ics_url}"
+
+	# do not search anymore
 	break
     fi
 
@@ -97,9 +98,9 @@ done
 
 declare -a appointed_DNs_array=()
 
-if $_unlocking_appoitment_found
+if [[ -n "${_unlocking_appointment_ics_url}" ]]
 then
-    
+    # an unlocking appointment has been found => we can search for reservation appointments
 
     for ics_url in $( echo "${ics_url_list}" )
     do

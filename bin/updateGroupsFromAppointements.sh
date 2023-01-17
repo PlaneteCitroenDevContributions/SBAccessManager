@@ -120,7 +120,9 @@ then
 	then
 	    # this is not an appointment which can be used for reseration,
 	    # since we need an ORANIZER
-	    :
+	    (
+		echo "INFO: appointment \"${ics_url}\" has no organizer. Skip it"
+	    ) 1>&2
 	else
 
 	    organizer_data=$(
@@ -143,7 +145,9 @@ then
 		# ldap search result OK
 		:
 	    else
-		echo "INTERNAL ERROR: Could not file \"${mailto}\" in ldap" 1>&2
+		(
+		    echo "INTERNAL ERROR: Could not file \"${mailto}\" in ldap"
+		) 1>&2
 		continue
 		# NOT REACHED
 	    fi
@@ -156,8 +160,10 @@ then
 	    lowercase_ldap_mail=$( tr '[:upper:]' '[:lower:]' <<< ${ldap_mail} )
 	    if [[ "${lowercase_mailto}" != "${lowercase_ldap_mail}" ]]
 	    then
-		echo "INTERNAL ERROR: Searched for \"${mailto}\" and found \"${ldap_mail}\" in ldap.
-Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>&2
+		(
+		    echo "INTERNAL ERROR: Searched for \"${mailto}\" and found \"${ldap_mail}\" in ldap.
+Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match"
+		) 1>&2
 		continue
 		# NOT REACHED
 	    fi

@@ -77,7 +77,7 @@ do
     if [[ -z "${organizer_line}" ]]
     then
 	(
-	    echo "INFO: found appointment without ORANIZER => it is myself (\"${CALDAV_USERNAME}\")"
+	    echo "INFO: found appointment without ORGANIZER => it is myself (\"${CALDAV_USERNAME}\")"
 	) 1>&2
 
 

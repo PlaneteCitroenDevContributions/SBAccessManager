@@ -107,7 +107,7 @@ then
 
 	if [[ "${ics_url}" == "${_unlocking_appointment_icl_url}" ]]
 	then
-	    # skip this appointment since it is the one which is used to ulock reservation
+	    # skip this appointment since it is the one which is used to unlock reservation
 	    continue
 	fi
 
@@ -119,7 +119,7 @@ then
 
 	if [[ -z "${organizer_line}" ]]
 	then
-	    # this is not an appointment which can be used for reseration,
+	    # this is not an appointment which can be used for reservation,
 	    # since we need an ORANIZER
 	    (
 		echo "INFO: appointment \"${ics_url}\" has no organizer. Skip it"

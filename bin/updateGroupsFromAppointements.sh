@@ -183,12 +183,6 @@ fi # if _unlocking_appoitment_found
     done
 ) 1>&2
 
-#
-# TODO:
-# check if a predefined DN (a manager?) has appointment currently reserver
-# if not, no new users can be allowed => allowed_DNs_array should remain empty
-#
-
 allowed_DNs_ldap_search_result=$(
 
     # dsidm may return line with empty DNs => remove these empty lines

@@ -22,6 +22,11 @@ services:
          - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/updateGroupsFromAppointements.sh; echo "INFO: ==================== Next check in $${DELAY} ====================" 1>&2; sleep $${DELAY}; done'
       networks:
          - internal_services
+      logging:
+         driver: json-file
+         options:
+            max-size: 100m
+            max-file: "3"
 
 networks:
 

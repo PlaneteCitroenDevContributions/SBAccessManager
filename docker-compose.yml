@@ -47,6 +47,7 @@ services:
          DELAY: ${DELAY-20s}
       volumes:
          - ./dsrc.txt:/data/config/container.inf:ro
+         - ./pwdfile.txt:/etc/pwdfile.txt:ro
          - ./_vols_/cache/:/var/cache4sync/:rw
       command:
          - bash

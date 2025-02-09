@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM almalinux:8.5
+FROM almalinux:9
 
 RUN dnf install -y \
        emacs-nox \

@@ -35,8 +35,10 @@ revokeServiceBoxAccess ()
     ${dsidm_cmd} group remove_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
 }
 
-updateCloudProfilesCache ()
+updateCloudProfilesCacheAndStopWithKey ()
 {
+
+    key_to_search_for="$1"
 
     curl -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${_cach_dir}/cloudMembers.json" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users?format=json' -H "OCS-APIRequest: true"
 
@@ -49,18 +51,25 @@ updateCloudProfilesCache ()
 
 	if [[ -r "${cloud_profile_cache_file_name}" ]]
 	then
-	   # we already donwloaded the data
-	   continue
+	    # we already donwloaded the data
+	    :
+	else
+
+	    url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
+
+	    curl -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.' > "${cloud_profile_cache_file_name}"
 	fi
 
-	url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
+	if [[ -n "${key_to_search_for}" ]]
+	then
+	    if grep --fixed-strings "${key_to_search_for}" "${cloud_profile_cache_file_name}"
+	    then
+		break
+	    fi
+	fi
 
-	curl -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${cloud_profile_cache_file_name}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true"
+    done < "${_cach_dir}/cloudMembers.txt"
 
-	break
-    done << "${_cach_dir}/cloudMembers.txt"
-
-EOF
 }
 
 
@@ -76,7 +85,7 @@ getCloudProfileUID ()
     then
 	# not found entry
 	# update the cache and try again
-	updateCloudProfilesCache
+	updateCloudProfilesCacheAndStopWithKey "${invision_profile_url}"
     fi
 
     # search a second time, after cache update
@@ -92,11 +101,11 @@ getCloudProfileUID ()
 	return 1
     fi
 
-    echo 'NYI'
+    # FIXME: we suppose that a single file name is returned
+    cloud_id=$( jq -r '.ocs.data.id' )
+    echo "${cloud_id}"
     return 0
 }
-
-
 
 # Get all forum members which are member of the required groups
 
@@ -134,7 +143,14 @@ do
     invision_profile_url="${line}"
 
     # get CloudProfile entries for this profile
-    getCloudProfileUID "${invision_profile_url}"
+    if cloud_id=$( getCloudProfileUID "${invision_profile_url}" )
+    then
+	:
+    else
+	# could not get a cloud ID for the forum profile
+	echo "WARNING: no Cloud profile found for Forum profile ${invision_profile_url}"
+	continue
+    fi
 
     break
     

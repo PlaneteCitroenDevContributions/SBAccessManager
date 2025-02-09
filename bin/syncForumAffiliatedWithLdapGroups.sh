@@ -18,7 +18,7 @@ export LANG='en_US.utf8'
 env
 
 
-: ${ALLOWING_LDAP_GROUP_NAME:='ServiceBoxAllowed'}
+: ${CLOUD_AFFILIATED_LDAP_GROUP_NAME:='_NOT_INITILIZED_'}
 
 grantServiceBoxAccess ()
 {
@@ -102,7 +102,7 @@ getCloudProfileUID ()
     fi
 
     # FIXME: we suppose that a single file name is returned
-    cloud_id=$( jq -r '.ocs.data.id' )
+    cloud_id=$( cat "${cloud_profile_entries}" | jq -r '.ocs.data.id' )
     echo "${cloud_id}"
     return 0
 }
@@ -136,9 +136,12 @@ curl -u "${INVISION_API_KEY}:" --output "${_cach_dir}/forumMembersWithAccess.jso
 
 jq -r '.results[].profileUrl' "${_cach_dir}/forumMembersWithAccess.json" > "${_cach_dir}/forumProfiles.txt"
 
+#FIXME: test!!
+echo 'https://www.planete-citroen.com/profile/1067-bernhara/' > "${_cach_dir}/forumProfiles.txt"
+
 while read line
 do
-    echo "XXXXX${line}YYYYYY"
+    echo "DEBUG: syncing ${line}"
 
     invision_profile_url="${line}"
 
@@ -150,6 +153,20 @@ do
 	# could not get a cloud ID for the forum profile
 	echo "WARNING: no Cloud profile found for Forum profile ${invision_profile_url}"
 	continue
+    fi
+
+    # retrieve user description (dn + mail) in LDAP, based on his email address (mailto)
+    dn_search_result=$(
+	${ldapsearch_cmd} -z 1 "uid=${cloud_id}" dn mail
+    )
+    if grep -q '--regexp=^mail:' <<< ${dn_search_result}
+    then
+	# ldap search result OK
+	:
+    else
+	echo "INTERNAL ERROR: Could not file \"${uid}\" in ldap" 1>&2
+	continue
+	# NOT REACHED
     fi
 
     break

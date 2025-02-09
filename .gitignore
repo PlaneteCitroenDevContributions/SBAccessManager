@@ -7,6 +7,9 @@
 /pwdfile.txt
 /.env
 /dav_config.env
+/dav_config.env
+/global_config.env
+/servicebox_pr_config.env
 /_test*.env
 
 

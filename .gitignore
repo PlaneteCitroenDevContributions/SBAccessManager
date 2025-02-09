@@ -13,5 +13,4 @@
 /forum_sync_config.env
 /_test*.env
 
-
-
+/_vols_/

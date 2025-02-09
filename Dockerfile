@@ -10,20 +10,27 @@ RUN dnf install -y \
     dnf clean all
 
 RUN dnf install -y \
-       python3.9 \
+       python3 \
+       python3-pip \
     && \
     dnf clean all
 
-RUN python3.9 -m pip install pipenv
+RUN python3 -m pip install pipenv
 
-RUN dnf module install -y \
-    	389-directory-server:stable/minimal \
-    && \
-    dnf clean all
+# FIXME: still useful?
+#!!! RUN dnf module install -y \
+#!!!     	389-directory-server:stable/minimal \
+#!!!     && \
+#!!!     dnf clean all
 
 RUN dnf install -y \
        openldap-clients \
        python3-lib389 \
+    && \
+    dnf clean all
+
+RUN dnf install -y \
+       jq \
     && \
     dnf clean all
 

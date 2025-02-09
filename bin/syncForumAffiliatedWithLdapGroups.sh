@@ -24,7 +24,7 @@ grantServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    ${dsidm_cmd} group add_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
+    ${dsidm_cmd} group add_member "${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"  "${ldap_dn}"
     
 }
 
@@ -159,7 +159,7 @@ do
     dn_search_result=$(
 	${ldapsearch_cmd} -z 1 "uid=${cloud_id}" dn mail
     )
-    if grep -q '--regexp=^mail:' <<< ${dn_search_result}
+    if grep -q '--regexp=^dn:' <<< ${dn_search_result}
     then
 	# ldap search result OK
 	:
@@ -169,10 +169,12 @@ do
 	# NOT REACHED
     fi
 
-    break
-    
+    dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
+
+    grantServiceBoxAccess "${dn}"
+
 done < "${_cach_dir}/forumProfiles.txt"
-exit 1
+exit 0
 
 
 #

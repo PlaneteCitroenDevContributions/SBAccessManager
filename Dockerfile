@@ -38,7 +38,7 @@ COPY bin/updateGroupsFromAppointements.sh  bin/updateGroupsFromAppointements.sh
 COPY bin/syncForumAffiliatedWithLdapGroups.sh  bin/syncForumAffiliatedWithLdapGroups.sh
 COPY src/getAppointments4Date.py src/getAppointments4Date.py
 
-ENV SHELL_DEBUG
+ENV SHELL_DEBUG=
 ENV CALDAV_PRINCIPAL_URL=
 ENV CALDAV_USERNAME=
 ENV CALDAV_PASSWORD=

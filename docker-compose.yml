@@ -6,11 +6,11 @@ services:
       restart: unless-stopped
       env_file:
         - path: ./global_config.env
-          rquire: false
+          required: false
         - path: ./dav_config.env
-          require: true
+          required: true
         - path: ./servicebox_pr_config.env
-          require: true
+          required: true
         
       environment:
          DELAY: ${DELAY-20s}
@@ -41,9 +41,9 @@ services:
       restart: unless-stopped
       env_file:
         - path: ./global_config.env
-          rquire: false
+          required: false
         - path: ./forum_sync_config.env
-          require: true
+          required: true
         
       environment:
          DELAY: ${DELAY-20s}

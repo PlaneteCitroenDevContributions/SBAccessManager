@@ -36,6 +36,37 @@ services:
             max-size: 100m
             max-file: "3"
 
+   sync_forum_affiliated_with_ldap_cloud_groups:
+      build: .
+      restart: unless-stopped
+      env_file:
+        - path: ./global_config.env
+          rquire: false
+        - path: ./forum_sync_config.env
+          require: true
+        
+      environment:
+         DELAY: ${DELAY-20s}
+         CLOUD_AFFILIATED_LDAP_GROUP_NAME: ${CLOUD_AFFILIATED_LDAP_GROUP_NAME}
+         INVISION_API_KEY: ${INVISION_API_KEY}
+         INVISION_GROUP_ID1: ${INVISION_GROUP_ID1}
+         INVISION_GROUP_ID2: ${INVISION_GROUP_ID2-}
+         INVISION_GROUP_ID3: ${INVISION_GROUP_ID3-}
+         SHELL_DEBUG: ${SHELL_DEBUG:-}
+      volumes:
+         - ./dsrc.txt:/data/config/container.inf:ro
+      command:
+         - bash
+         - -c
+         - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/syncForumAffiliatedWithLdapGroups.sh; echo "INFO: ==================== Next check in $${DELAY} ====================" 1>&2; sleep $${DELAY}; done'
+      networks:
+         - internal_services
+      logging:
+         driver: json-file
+         options:
+            max-size: 100m
+            max-file: "3"
+
 networks:
 
    internal_services:

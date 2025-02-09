@@ -3,6 +3,8 @@
 HERE=$( dirname "$0" )
 PROJECT_ROOT_DIR="${HERE}/.."
 
+_cach_dir="/var/cache4sync"
+
 if [[ -n "${SHELL_DEBUG}" ]]
 then
     set -x
@@ -15,34 +17,8 @@ export LANG='en_US.utf8'
 
 env
 
-exit 1
-
-
 
 : ${ALLOWING_LDAP_GROUP_NAME:='ServiceBoxAllowed'}
-
-: ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
-
-getVCalData ()
-{
-    ics_url="$1"
-
-    sanitized_url=$(
-	echo "${ics_url}" | tr --delete '\r'
-	)
-
-    vcal_data=$(
-	test -r /tmp/response && rm /tmp/response.txt
-	code=$(
-	    curl \
-	       --silent --show-error -w '%{http_code}' -o /tmp/response.txt \
-	       -u ${CALDAV_USERNAME}:${CALDAV_PASSWORD} -H 'Accept: text/calendar' -H 'Accept-Charset: utf-8' "${ics_url}"'?export' )
-	# put everything on a single line
-	sed -z 's/\r\n\ //g' /tmp/response.txt
-    )
-
-    echo "${vcal_data}"
-}
 
 grantServiceBoxAccess ()
 {
@@ -59,26 +35,118 @@ revokeServiceBoxAccess ()
     ${dsidm_cmd} group remove_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
 }
 
+updateCloudProfilesCache ()
+{
 
-if [[ -z "${TEST_ICS_URL_LIST}" ]]
+    curl -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${_cach_dir}/cloudMembers.json" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users?format=json' -H "OCS-APIRequest: true"
+
+    jq -r '.ocs.data.users[]' "${_cach_dir}/cloudMembers.json" > "${_cach_dir}/cloudMembers.txt"
+
+    while read cloud_uid
+    do
+
+	cloud_profile_cache_file_name="${_cach_dir}"/cloud_profile_"${cloud_uid}".json
+
+	if [[ -r "${cloud_profile_cache_file_name}" ]]
+	then
+	   # we already donwloaded the data
+	   continue
+	fi
+
+	url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
+
+	curl -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${cloud_profile_cache_file_name}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true"
+
+	break
+    done << "${_cach_dir}/cloudMembers.txt"
+
+EOF
+}
+
+
+getCloudProfileUID ()
+{
+    invision_profile_url="$1"
+
+    # search in cached profiles once
+    cloud_profile_entries=$(
+	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cach_dir}/cloud_profile_"*.json
+			 )
+    if [[ -z "${cloud_profile_entries}" ]]
+    then
+	# not found entry
+	# update the cache and try again
+	updateCloudProfilesCache
+    fi
+
+    # search a second time, after cache update
+    cloud_profile_entries=$(
+	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cach_dir}/cloud_profile_"*.json
+			 )
+
+    if [[ -z "${cloud_profile_entries}" ]]
+    then
+	# not found entry
+	# no cloud uid found for forum profile url
+	echo ''
+	return 1
+    fi
+
+    echo 'NYI'
+    return 0
+}
+
+
+
+# Get all forum members which are member of the required groups
+
+if [[ -z "${INVISION_GROUP_ID1}" ]]
 then
-    ics_url_list=$(
-	${PYTHON_BIN} "${PROJECT_ROOT_DIR}/src/getAppointments4Date.py" 2>/dev/null
-    )
-else
-    ics_url_list="${TEST_ICS_URL_LIST}"
+    echo "ERROR: INVISION_GROUP_ID1 not set" 1>&2
+    exit 1
 fi
+
+_group_url_arg="group=${INVISION_GROUP_ID1}"
+
+if [[ -n "${INVISION_GROUP_ID2}" ]]
+then
+    _group_url_arg+=",${INVISION_GROUP_ID2}"
+fi
+
+if [[ -n "${INVISION_GROUP_ID3}" ]]
+then
+    _group_url_arg+=",${INVISION_GROUP_ID3}"
+fi
+
+#FIXME: perPage should be a param
+
+curl -u "${INVISION_API_KEY}:" --output "${_cach_dir}/forumMembersWithAccess.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
+
+#
+# Extract Invision profile URL for all found members
+
+jq -r '.results[].profileUrl' "${_cach_dir}/forumMembersWithAccess.json" > "${_cach_dir}/forumProfiles.txt"
+
+while read line
+do
+    echo "XXXXX${line}YYYYYY"
+
+    invision_profile_url="${line}"
+
+    # get CloudProfile entries for this profile
+    getCloudProfileUID "${invision_profile_url}"
+
+    break
+    
+done < "${_cach_dir}/forumProfiles.txt"
+exit 1
+
 
 #
 # search for all users who reserved
 #
 
 declare -a appointed_DNs_array=()
-
-for ics_url in $( echo "${ics_url_list}" )
-do
-
-    vcal_data=$( getVCalData ${ics_url} )
 
     organizer_line=$(
 	echo "${vcal_data}" | grep -e '^ORGANIZER;'

@@ -4,6 +4,14 @@ services:
    pc_group_membership_manager:
       build: .
       restart: unless-stopped
+      env_file:
+        - path: ./global_config.env
+          rquire: false
+        - path: ./dav_config.env
+          require: true
+        - path: ./servicebox_pr_config.env
+          require: true
+        
       environment:
          DELAY: ${DELAY-20s}
          CALDAV_PRINCIPAL_URL: ${CALDAV_PRINCIPAL_URL}

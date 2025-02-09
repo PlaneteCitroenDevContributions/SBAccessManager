@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-   pc_group_membership_manager:
+   pc_group_membership_manager_for_servicebox_pr:
       build: .
       restart: unless-stopped
       env_file:

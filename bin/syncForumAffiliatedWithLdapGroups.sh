@@ -30,6 +30,13 @@ addUidToAffiliatedGroup ()
     
 }
 
+getCurrentListOfUidsInffiliatedGroup ()
+{
+
+    eval ${dsidm_cmd_to_evaluate} 'group' 'members' "${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"
+    
+}
+
 revokeServiceBoxAccess ()
 {
     ldap_dn="$1"
@@ -141,6 +148,11 @@ jq -r '.results[].profileUrl' "${_cach_dir}/forumMembersWithAccess.json" > "${_c
 #FIXME: test!!
 echo 'https://www.planete-citroen.com/profile/1067-bernhara/' > "${_cach_dir}/forumProfiles.txt"
 
+#
+# get current member list of affiliated group
+#
+getCurrentListOfUidsInffiliatedGroup > "${_cach_dir}/affiliatedGroupMembers.json"
+
 while read line
 do
     echo "DEBUG: syncing ${line}"
@@ -173,10 +185,17 @@ do
 
     dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    addUidToAffiliatedGroup "${dn}"
-    (
-	echo "INFO: \"${dn}\" is now member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\""
-    ) 1>&2
+    if grep --fixed-strings "${dn}" "${_cach_dir}/affiliatedGroupMembers.json"
+    then
+	# DN already member of affiliated group => skip
+	:
+    else
+	
+	addUidToAffiliatedGroup "${dn}"
+	(
+	    echo "INFO: \"${dn}\" is now member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\""
+	) 1>&2
+    fi
 
 done < "${_cach_dir}/forumProfiles.txt"
 

@@ -146,7 +146,9 @@ curl -u "${INVISION_API_KEY}:" --output "${_cach_dir}/forumMembersWithAccess.jso
 jq -r '.results[].profileUrl' "${_cach_dir}/forumMembersWithAccess.json" > "${_cach_dir}/forumProfiles.txt"
 
 #FIXME: test!!
-echo 'https://www.planete-citroen.com/profile/1067-bernhara/' > "${_cach_dir}/forumProfiles.txt"
+# > "${_cach_dir}/forumProfiles.txt"
+# echo 'https://www.planete-citroen.com/profile/1067-bernhara/' >> "${_cach_dir}/forumProfiles.txt"
+# echo 'https://www.planete-citroen.com/profile/2-nicolas/' >> "${_cach_dir}/forumProfiles.txt"
 
 #
 # get current member list of affiliated group

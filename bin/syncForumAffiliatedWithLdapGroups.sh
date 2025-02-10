@@ -49,7 +49,7 @@ updateCloudProfilesCacheAndStopWithKey ()
 
     key_to_search_for="$1"
 
-    curl -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${_cach_dir}/cloudMembers.json" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users?format=json' -H "OCS-APIRequest: true"
+    curl -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${_cach_dir}/cloudMembers.json" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users?format=json' -H "OCS-APIRequest: true"
 
     jq -r '.ocs.data.users[]' "${_cach_dir}/cloudMembers.json" > "${_cach_dir}/cloudMembers.txt"
 
@@ -138,7 +138,7 @@ fi
 
 #FIXME: perPage should be a param
 
-curl -u "${INVISION_API_KEY}:" --output "${_cach_dir}/forumMembersWithAccess.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
+curl -s -u "${INVISION_API_KEY}:" --output "${_cach_dir}/forumMembersWithAccess.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
 
 #
 # Extract Invision profile URL for all found members
@@ -201,5 +201,4 @@ do
 
 done < "${_cach_dir}/forumProfiles.txt"
 
-while true; do sleep 1h; done
 exit 0

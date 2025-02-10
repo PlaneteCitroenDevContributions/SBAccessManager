@@ -45,11 +45,12 @@ COPY bin/updateGroupsFromAppointements.sh  bin/updateGroupsFromAppointements.sh
 COPY bin/syncForumAffiliatedWithLdapGroups.sh  bin/syncForumAffiliatedWithLdapGroups.sh
 COPY src/getAppointments4Date.py src/getAppointments4Date.py
 
-ENV SHELL_DEBUG=
+ENV SHELL_DEBUG=''
 ENV CALDAV_PRINCIPAL_URL=
 ENV CALDAV_USERNAME=
 ENV CALDAV_PASSWORD=
 ENV SERVICE_BOX_CALENDAR_NAME=
+ENV LDAP_URL='ldap://ldap:3389'
 ENV CLOUD_AFFILIATED_LDAP_GROUP_NAME=
 ENV INVISION_API_KEY=
 ENV INVISION_GROUP_ID1=

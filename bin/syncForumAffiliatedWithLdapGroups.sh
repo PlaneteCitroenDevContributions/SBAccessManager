@@ -187,7 +187,7 @@ do
 
     dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    if grep --fixed-strings "${dn}" "${_cach_dir}/affiliatedGroupMembers.json"
+    if grep -q --fixed-strings "${dn}" "${_cach_dir}/affiliatedGroupMembers.json"
     then
 	# DN already member of affiliated group => skip
 	(

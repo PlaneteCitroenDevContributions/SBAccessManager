@@ -190,7 +190,10 @@ do
     if grep --fixed-strings "${dn}" "${_cach_dir}/affiliatedGroupMembers.json"
     then
 	# DN already member of affiliated group => skip
-	:
+	(
+	    echo "INFO: \"${dn}\" is already member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\". SKIP action."
+	) 1>&2
+
     else
 	
 	addUidToAffiliatedGroup "${dn}"

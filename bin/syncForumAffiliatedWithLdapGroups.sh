@@ -10,8 +10,13 @@ then
     set -x
 fi
 
-dsidm_cmd="dsidm --pwdfile /etc/pwdfile.txt pcds"
-ldapsearch_cmd="ldapsearch -x -b ou=people,dc=planetecitroen,dc=fr -H ldap://ldap:3389"
+#!! FIXME: this shouldbe an external param
+LDAP_URL='ldap://ldap:3389'
+
+dsidm_cmd_to_evaluate="dsidm --basedn 'dc=planetecitroen,dc=fr' --binddn 'cn=Directory Manager' --pwdfile '/etc/pwdfile.txt' --json '${LDAP_URL}'"
+eval ${dsidm_cmd_to_evaluate} group members demo_group
+while true; do sleep 1h; done
+ldapsearch_cmd="ldapsearch -x -b "ou=people,dc=planetecitroen,dc=fr" -H ${LDAP_URL}"
 
 export LANG='en_US.utf8'
 
@@ -20,11 +25,11 @@ env
 
 : ${CLOUD_AFFILIATED_LDAP_GROUP_NAME:='_NOT_INITILIZED_'}
 
-grantServiceBoxAccess ()
+addUidToAffiliatedGroup ()
 {
     ldap_dn="$1"
 
-    ${dsidm_cmd} group add_member "${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"  "${ldap_dn}"
+    eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' "${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"  "${ldap_dn}"
     
 }
 
@@ -171,160 +176,12 @@ do
 
     dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    grantServiceBoxAccess "${dn}"
+    addUidToAffiliatedGroup "${dn}"
+    (
+	echo "INFO: \"${dn}\" is now member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\""
+    ) 1>&2
 
 done < "${_cach_dir}/forumProfiles.txt"
+
+while true; do sleep 1h; done
 exit 0
-
-
-#
-# search for all users who reserved
-#
-
-declare -a appointed_DNs_array=()
-
-    organizer_line=$(
-	echo "${vcal_data}" | grep -e '^ORGANIZER;'
-		  )
-
-    organizer_data=$(
-	echo "${organizer_line}" | sed -e 's/ORGANIZER;//' -e 's/\r$//'
-	     )
-
-    displayName=$( echo "${organizer_data}" | sed -e 's/CN=\(.*\):mailto:.*$/\1/' )
-    mailto=$( echo "${organizer_data}" | sed -e 's/.*:mailto:\(.*\)$/\1/' )
-
-    (
-	echo "INFO: found appointment for display Name \"${displayName}\" with email \"${mailto}\""
-    ) 1>&2
-
-    # retrieve user description (dn + mail) in LDAP, based on his email address (mailto)
-    dn_search_result=$(
-	${ldapsearch_cmd} -z 1 "mail=${mailto}" dn mail
-    )
-    if grep -q '--regexp=^mail:' <<< ${dn_search_result}
-    then
-	# ldap search result OK
-	:
-    else
-	echo "INTERNAL ERROR: Could not file \"${mailto}\" in ldap" 1>&2
-	continue
-	# NOT REACHED
-    fi
-
-    #
-    # for security, we check that the retrieved mail is what we searched for
-    #
-    ldap_mail=$( sed -n -e '/^mail: /s/^mail: //p' <<< ${dn_search_result} )
-    lowercase_mailto=$( tr '[:upper:]' '[:lower:]' <<< ${mailto} )
-    lowercase_ldap_mail=$( tr '[:upper:]' '[:lower:]' <<< ${ldap_mail} )
-    if [[ "${lowercase_mailto}" != "${lowercase_ldap_mail}" ]]
-    then
-	echo "INTERNAL ERROR: Searched for \"${mailto}\" and found \"${ldap_mail}\" in ldap.
-Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>&2
-	continue
-	# NOT REACHED
-    fi
-    
-    dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
-
-    appointed_DNs_array+=( "${dn}" )
-
-done
-
-(
-    echo "INFO: currently appointed DNs"
-    for dn in "${appointed_DNs_array[@]}"
-    do
-	echo "	\"${dn}\""
-    done
-) 1>&2
-
-allowed_DNs_ldap_search_result=$(
-
-    # dsidm may return line with empty DNs => remove these empty lines
-
-    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
-	sed -n -e '/^dn: /s/^dn: //p' | \
-	sed -e '/^[ \t]*$/d' )
-# store result in array
-declare -a allowed_DNs_array=()
-while IFS= read -r line; do
-    # skip eventual empty lines
-    if [[ -n "${line}" ]]
-    then
-	allowed_DNs_array+=( "${line}" )
-    fi
-done <<< ${allowed_DNs_ldap_search_result}
-#
-# allow new users who reserved and are not already allowed
-#
-
-appointed_minus_allowed_DNs=$(
-    
-    for dn in "${allowed_DNs_array[@]}" "${allowed_DNs_array[@]}" "${appointed_DNs_array[@]}"
-    do
-	echo "${dn}"
-    done | \
-    sort | \
-    uniq -u
-)
-# store result in array
-declare -a  new_DNs_array=()
-while IFS= read -r line; do
-    # skip eventual empty lines
-    if [[ -n "${line}" ]]
-    then
-	new_DNs_array+=( "${line}" )
-    fi
-done <<< ${appointed_minus_allowed_DNs}
-
-
-
-#
-# grant access to appointed DNs not already granted
-#
-
-for dn in "${new_DNs_array[@]}"
-do
-    grantServiceBoxAccess "${dn}"
-    (
-	echo "INFO: granted acces to DN \"${dn}\""
-    ) 1>&2
-done
-
-#
-# revoke all users who did not reserve and are currently allowed
-#
-
-allowed_DNs_minus_appointed=$(
-    
-    for dn in "${appointed_DNs_array[@]}" "${appointed_DNs_array[@]}" "${allowed_DNs_array[@]}"
-    do
-	echo "${dn}"
-    done | \
-    sort | \
-    uniq -u
-)
-# store result in array
-declare -a  terminated_DNs_array=()
-while IFS= read -r line; do
-    # skip eventual empty lines
-    if [[ -n "${line}" ]]
-    then
-	terminated_DNs_array+=( "${line}" )
-    fi
-done <<< ${allowed_DNs_minus_appointed}
-
-for dn in "${terminated_DNs_array[@]}"
-do
-    revokeServiceBoxAccess "${dn}"
-    (
-	echo "INFO: revoked acces to DN \"${dn}\""
-    ) 1>&2
-done
-
-(
-    echo "INFO: current members of LDAP group \"${ALLOWING_LDAP_GROUP_NAME}\""
-    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e 's/^/\t==>/'
-) 1>&2

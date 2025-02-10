@@ -10,12 +10,9 @@ then
     set -x
 fi
 
-#!! FIXME: this shouldbe an external param
-LDAP_URL='ldap://ldap:3389'
+: ${LDAP_URL:='ldap://ldap:3389'}
 
 dsidm_cmd_to_evaluate="dsidm --basedn 'dc=planetecitroen,dc=fr' --binddn 'cn=Directory Manager' --pwdfile '/etc/pwdfile.txt' --json '${LDAP_URL}'"
-eval ${dsidm_cmd_to_evaluate} group members demo_group
-while true; do sleep 1h; done
 ldapsearch_cmd="ldapsearch -x -b "ou=people,dc=planetecitroen,dc=fr" -H ${LDAP_URL}"
 
 export LANG='en_US.utf8'

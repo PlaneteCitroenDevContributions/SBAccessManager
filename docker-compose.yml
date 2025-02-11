@@ -1,3 +1,5 @@
+name: manage-servicebox-access-rights
+
 services:
    pc_group_membership_manager_for_servicebox_pr:
       build: .
@@ -27,7 +29,7 @@ services:
          - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/updateGroupsFromAppointements.sh; echo "INFO: ==================== Next check in $${DELAY} ====================" 1>&2; sleep $${DELAY}; done'
       networks:
          - internal_services
-      logging:
+      logging: &logging_shared_config
          driver: json-file
          options:
             max-size: 100m
@@ -54,11 +56,7 @@ services:
 #!!!         - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/syncForumAffiliatedWithLdapGroups.sh; echo "INFO: ==================== Next check in $${DELAY} ====================" 1>&2; sleep $${DELAY}; done'
       networks:
          - internal_services
-      logging:
-         driver: json-file
-         options:
-            max-size: 100m
-            max-file: "3"
+      logging: *logging_shared_config
 
 networks:
 

@@ -9,7 +9,7 @@
 /dav_config.env
 /global_config.env
 /servicebox_pr_config.env
-/forum_sync_config.env
+/sync_forum_affiliated_with_ldap_cloud_groups.env
 /_test*.env
 
 /_vols_/

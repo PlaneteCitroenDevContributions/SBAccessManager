@@ -6,9 +6,12 @@ PROJECT_ROOT_DIR="${HERE}/.."
 if [[ -n "${SHELL_DEBUG}" ]]
 then
     set -x
+    env
 fi
 
-dsidm_cmd="dsidm --pwdfile /etc/pwdfile.txt pcds"
+: ${LDAP_URL:='ldap://ldap:3389'}
+
+dsidm_cmd_to_evaluate="dsidm --basedn 'dc=planetecitroen,dc=fr' --binddn 'cn=Directory Manager' --pwdfile '/etc/pwdfile.txt' --json '${LDAP_URL}'"
 ldapsearch_cmd="ldapsearch -x -b ou=people,dc=planetecitroen,dc=fr -H ldap://ldap:3389"
 
 export LANG='en_US.utf8'
@@ -46,11 +49,48 @@ grantServiceBoxAccess ()
     
 }
 
+userHasCapabilities ()
+{
+    echo '=============================================================' 1>&2
+    ldap_dn="$1"
+
+    # ${dsidm_cmd} group add_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
+    MANDATORY_GROUP1='AyantDroit-2025'
+
+    if [[ -n "${MANDATORY_GROUP1}" ]]
+    then
+
+	mandatory_group_members=$(
+	    eval ${dsidm_cmd_to_evaluate} group members "AyantDroit-2025" | \
+		 sed -n -e '/^dn: /s/^dn: //p' )
+	
+	echo '=============================================================' 1>&2
+	if grep --fixed-string "${ldap_dn}" <<< ${mandatory_group_members}
+	then
+	    (
+		echo "DEBUG: ${ldap_dn} is member of mandatory group ${MANDATORY_GROUP1}"
+	    ) 1>&2
+	else
+	    (
+		echo "INFO: ${ldap_dn} is NOT member of mandatory group ${MANDATORY_GROUP1}"
+	    ) 1>&2
+	    return 1
+	fi
+	echo '=============================================================' 1>&2
+
+    fi
+
+    return 0
+}
+
+userHasCapabilities 'uid=api_test,ou=people,dc=planetecitroen,dc=fr'
+exit 1
+
 revokeServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    ${dsidm_cmd} group remove_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
+    eval ${dsidm_cmd_to_evaluate} group remove_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
 }
 
 
@@ -135,7 +175,7 @@ allowed_DNs_ldap_search_result=$(
 
     # dsidm may return line with empty DNs => remove these empty lines
 
-    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
+    eval ${dsidm_cmd_to_evaluate} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
 	sed -n -e '/^dn: /s/^dn: //p' | \
 	sed -e '/^[ \t]*$/d' )
 # store result in array
@@ -178,10 +218,17 @@ done <<< ${appointed_minus_allowed_DNs}
 
 for dn in "${new_DNs_array[@]}"
 do
-    grantServiceBoxAccess "${dn}"
-    (
-	echo "INFO: granted acces to DN \"${dn}\""
-    ) 1>&2
+    if userHasCapabilities "${dn}"
+    then
+	grantServiceBoxAccess "${dn}"
+	(
+	    echo "INFO: granted acces to DN \"${dn}\""
+	) 1>&2
+    else
+	(
+	    echo "INFO: user with DN \"${dn}\" does not have the right capabilies"
+	) 1>&2
+    fi
 done
 
 #
@@ -217,5 +264,5 @@ done
 
 (
     echo "INFO: current members of LDAP group \"${ALLOWING_LDAP_GROUP_NAME}\""
-    ${dsidm_cmd} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e 's/^/\t==>/'
+    eval ${dsidm_cmd_to_evaluate} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e 's/^/\t==>/'
 ) 1>&2

@@ -39,7 +39,7 @@ services:
       env_file:
         - path: ./global_config.env
           required: false
-        - path: ./forum_sync_config.env
+        - path: ./sync_forum_affiliated_with_ldap_cloud_groups.env
           required: true
         
       environment:

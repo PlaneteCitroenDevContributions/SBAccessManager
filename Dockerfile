@@ -17,12 +17,6 @@ RUN dnf install -y \
 
 RUN python3 -m pip install pipenv
 
-# FIXME: still useful?
-#!!! RUN dnf module install -y \
-#!!!     	389-directory-server:stable/minimal \
-#!!!     && \
-#!!!     dnf clean all
-
 RUN dnf install -y \
        openldap-clients \
        python3-lib389 \

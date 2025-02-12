@@ -51,7 +51,6 @@ grantServiceBoxAccess ()
 
 userHasCapabilities ()
 {
-    echo '=============================================================' 1>&2
     ldap_dn="$1"
 
     var_names_holding_mandatory_ldap_group_names="
@@ -92,9 +91,6 @@ userHasCapabilities ()
 
     return 0
 }
-
-userHasCapabilities 'uid=api_test,ou=people,dc=planetecitroen,dc=fr'
-exit 1
 
 revokeServiceBoxAccess ()
 {
@@ -236,7 +232,7 @@ do
 	) 1>&2
     else
 	(
-	    echo "INFO: user with DN \"${dn}\" does not have the right capabilies"
+	    echo "INFO: user with DN \"${dn}\" does not have the required capabilies"
 	) 1>&2
     fi
 done

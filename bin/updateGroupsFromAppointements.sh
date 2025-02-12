@@ -54,31 +54,41 @@ userHasCapabilities ()
     echo '=============================================================' 1>&2
     ldap_dn="$1"
 
-    # ${dsidm_cmd} group add_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
-    MANDATORY_GROUP1='AyantDroit-2025'
+    var_names_holding_mandatory_ldap_group_names="
+	USER_MUST_BE_MEMBER_OF_LDAP_GROUP1
+	USER_MUST_BE_MEMBER_OF_LDAP_GROUP2
+	USER_MUST_BE_MEMBER_OF_LDAP_GROUP3"
 
-    if [[ -n "${MANDATORY_GROUP1}" ]]
-    then
+    for var_name in ${var_names_holding_mandatory_ldap_group_names}
+    do
+	#test if var is set
+	eval "var_val=\"\${${var_name}}\""
 
-	mandatory_group_members=$(
-	    eval ${dsidm_cmd_to_evaluate} group members "AyantDroit-2025" | \
-		 sed -n -e '/^dn: /s/^dn: //p' )
-	
-	echo '=============================================================' 1>&2
-	if grep --fixed-string "${ldap_dn}" <<< ${mandatory_group_members}
+	if [[ -n "${var_val}" ]]
 	then
-	    (
-		echo "DEBUG: ${ldap_dn} is member of mandatory group ${MANDATORY_GROUP1}"
-	    ) 1>&2
-	else
-	    (
-		echo "INFO: ${ldap_dn} is NOT member of mandatory group ${MANDATORY_GROUP1}"
-	    ) 1>&2
-	    return 1
-	fi
-	echo '=============================================================' 1>&2
 
-    fi
+	    mandatory_group="${var_val}"
+
+	    mandatory_group_members=$(
+		eval ${dsidm_cmd_to_evaluate} group members "AyantDroit-2025" | \
+		    sed -n -e '/^dn: /s/^dn: //p' )
+	
+	    echo '=============================================================' 1>&2
+	    if grep --fixed-string "${ldap_dn}" <<< ${mandatory_group_members}
+	    then
+		(
+		    echo "DEBUG: ${ldap_dn} is member of mandatory group ${mandatory_group}"
+		) 1>&2
+	    else
+		(
+		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
+		) 1>&2
+		return 1
+	    fi
+	    echo '=============================================================' 1>&2
+
+	fi
+    done
 
     return 0
 }

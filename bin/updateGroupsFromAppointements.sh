@@ -45,7 +45,7 @@ grantServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    ${dsidm_cmd} group add_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
+    eval ${dsidm_cmd_to_evaluate} group add_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
     
 }
 

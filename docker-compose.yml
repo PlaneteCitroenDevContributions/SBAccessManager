@@ -3,7 +3,7 @@ name: manage-servicebox-access-rights
 services:
    assign_servicebox_pr_rights_from_cloud_calendar:
       build: .
-#!!!      restart: unless-stopped
+      restart: unless-stopped
       env_file:
         - path: ./global_config.env
           required: false
@@ -17,8 +17,7 @@ services:
       command:
          - bash
          - -c
-#!!         - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/updateGroupsFromAppointements.sh; echo "INFO: ==================== Next check in $${DELAY} ====================" 1>&2; sleep $${DELAY}; done'
-         - '/code/bin/updateGroupsFromAppointements.sh; exit 0'
+         - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/updateGroupsFromAppointements.sh; echo "INFO: ==================== Next check in $${DELAY} ====================" 1>&2; sleep $${DELAY}; done'
       networks:
          - internal_services
       logging: &logging_shared_config
@@ -29,7 +28,7 @@ services:
 
    sync_forum_affiliated_with_ldap_cloud_groups:
       build: .
-#!!!      restart: unless-stopped
+      restart: unless-stopped
       env_file:
         - path: ./global_config.env
           required: false
@@ -37,15 +36,14 @@ services:
           required: true
         
       environment:
-         DELAY: ${DELAY-20s}
+         DELAY: ${DELAY-4h}
       volumes:
          - ./pwdfile.txt:/etc/pwdfile.txt:ro
          - ./_vols_/cache/:/var/cache4sync/:rw
       command:
          - bash
          - -c
-         - '/code/bin/syncForumAffiliatedWithLdapGroups.sh'
-#!!!         - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/syncForumAffiliatedWithLdapGroups.sh; echo "INFO: ==================== Next check in $${DELAY} ====================" 1>&2; sleep $${DELAY}; done'
+         - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/syncForumAffiliatedWithLdapGroups.sh; echo "INFO: ==================== Next check in $${DELAY} ====================" 1>&2; sleep $${DELAY}; done'
       networks:
          - internal_services
       logging: *logging_shared_config

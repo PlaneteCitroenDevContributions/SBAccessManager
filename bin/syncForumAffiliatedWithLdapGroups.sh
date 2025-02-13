@@ -26,14 +26,14 @@ addUidToAffiliatedGroup ()
 {
     ldap_dn="$1"
 
-    eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' "${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"  "${ldap_dn}"
+    eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' \'${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\'  \'${ldap_dn}\'
     
 }
 
 getCurrentListOfUidsInAffiliatedGroup ()
 {
 
-    eval ${dsidm_cmd_to_evaluate} 'group' 'members' "${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"
+    eval ${dsidm_cmd_to_evaluate} 'group' 'members' \'${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\'
     
 }
 
@@ -41,7 +41,7 @@ revokeServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    ${dsidm_cmd} group remove_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
+    eval ${dsidm_cmd_to_evaluate} group remove_member \'${ALLOWING_LDAP_GROUP_NAME}\'  \'${ldap_dn}\'
 }
 
 updateCloudProfilesCacheAndStopWithKey ()
@@ -149,6 +149,7 @@ jq -r '.results[].profileUrl' "${_cach_dir}/forumMembersWithAccess.json" > "${_c
 # > "${_cach_dir}/forumProfiles.txt"
 # echo 'https://www.planete-citroen.com/profile/1067-bernhara/' >> "${_cach_dir}/forumProfiles.txt"
 # echo 'https://www.planete-citroen.com/profile/2-nicolas/' >> "${_cach_dir}/forumProfiles.txt"
+# echo 'https://www.planete-citroen.com/profile/23962-alan-ford/' > "${_cach_dir}/forumProfiles.txt"
 
 #
 # get current member list of affiliated group

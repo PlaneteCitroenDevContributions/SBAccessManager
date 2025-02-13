@@ -45,7 +45,7 @@ grantServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    eval ${dsidm_cmd_to_evaluate} group add_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
+    eval ${dsidm_cmd_to_evaluate} group add_member \'${ALLOWING_LDAP_GROUP_NAME}\'  \'${ldap_dn}\'
     
 }
 
@@ -69,10 +69,9 @@ userHasCapabilities ()
 	    mandatory_group="${var_val}"
 
 	    mandatory_group_members=$(
-		eval ${dsidm_cmd_to_evaluate} group members "AyantDroit-2025" | \
+		eval ${dsidm_cmd_to_evaluate} group members \'${mandatory_group}\' | \
 		    sed -n -e '/^dn: /s/^dn: //p' )
 	
-	    echo '=============================================================' 1>&2
 	    if grep --fixed-string "${ldap_dn}" <<< ${mandatory_group_members}
 	    then
 		(
@@ -84,7 +83,6 @@ userHasCapabilities ()
 		) 1>&2
 		return 1
 	    fi
-	    echo '=============================================================' 1>&2
 
 	fi
     done
@@ -96,7 +94,7 @@ revokeServiceBoxAccess ()
 {
     ldap_dn="$1"
 
-    eval ${dsidm_cmd_to_evaluate} group remove_member "${ALLOWING_LDAP_GROUP_NAME}"  "${ldap_dn}"
+    eval ${dsidm_cmd_to_evaluate} group remove_member \'${ALLOWING_LDAP_GROUP_NAME}\'  \'${ldap_dn}\'
 }
 
 
@@ -181,7 +179,7 @@ allowed_DNs_ldap_search_result=$(
 
     # dsidm may return line with empty DNs => remove these empty lines
 
-    eval ${dsidm_cmd_to_evaluate} group members "${ALLOWING_LDAP_GROUP_NAME}" | \
+    eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | \
 	sed -n -e '/^dn: /s/^dn: //p' | \
 	sed -e '/^[ \t]*$/d' )
 # store result in array
@@ -270,5 +268,5 @@ done
 
 (
     echo "INFO: current members of LDAP group \"${ALLOWING_LDAP_GROUP_NAME}\""
-    eval ${dsidm_cmd_to_evaluate} group members "${ALLOWING_LDAP_GROUP_NAME}" | sed -e 's/^/\t==>/'
+    eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | sed -e 's/^/\t==>/'
 ) 1>&2

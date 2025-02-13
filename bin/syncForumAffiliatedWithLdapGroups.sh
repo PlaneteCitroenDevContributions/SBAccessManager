@@ -30,7 +30,7 @@ addUidToAffiliatedGroup ()
     
 }
 
-getCurrentListOfUidsInffiliatedGroup ()
+getCurrentListOfUidsInAffiliatedGroup ()
 {
 
     eval ${dsidm_cmd_to_evaluate} 'group' 'members' "${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"
@@ -153,7 +153,7 @@ jq -r '.results[].profileUrl' "${_cach_dir}/forumMembersWithAccess.json" > "${_c
 #
 # get current member list of affiliated group
 #
-getCurrentListOfUidsInffiliatedGroup > "${_cach_dir}/affiliatedGroupMembers.json"
+getCurrentListOfUidsInAffiliatedGroup > "${_cach_dir}/affiliatedGroupMembers.json"
 
 while read line
 do

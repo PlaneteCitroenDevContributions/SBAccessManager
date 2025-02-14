@@ -100,8 +100,6 @@ userHasCapabilities ()
     return 0
 }
 
-userHasCapabilities 'uid=alan ford,ou=people,dc=planetecitroen,dc=fr'
-
 revokeServiceBoxAccess ()
 {
     ldap_dn="$1"

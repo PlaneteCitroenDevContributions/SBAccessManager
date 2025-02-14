@@ -1,5 +1,3 @@
-name: manage-servicebox-access-rights
-
 services:
    assign_servicebox_pr_rights_from_cloud_calendar:
       build: .

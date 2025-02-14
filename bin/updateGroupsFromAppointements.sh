@@ -58,6 +58,20 @@ userHasCapabilities ()
 	USER_MUST_BE_MEMBER_OF_LDAP_GROUP2
 	USER_MUST_BE_MEMBER_OF_LDAP_GROUP3"
 
+    uid=$( eval ${dsidm_cmd_to_evaluate} user get_dn \'${ldap_dn}\' )
+    current_group_dns_for_ldap_dn=$(
+	eval ${dsidm_cmd_to_evaluate} user get \'${uid}\' | \
+	    jq -r '.attrs.memberof[]'
+			      )
+
+    current_group_ids_for_ldap_dn=$(
+	for group_dn in ${current_group_dns_for_ldap_dn}
+	do
+	    eval ${dsidm_cmd_to_evaluate} group get_dn \'${group_dn}\'
+	done
+	)
+	
+
     for var_name in ${var_names_holding_mandatory_ldap_group_names}
     do
 	#test if var is set
@@ -68,11 +82,7 @@ userHasCapabilities ()
 
 	    mandatory_group="${var_val}"
 
-	    mandatory_group_members=$(
-		eval ${dsidm_cmd_to_evaluate} group members \'${mandatory_group}\' | \
-		    sed -n -e '/^dn: /s/^dn: //p' )
-	
-	    if grep --fixed-string "${ldap_dn}" <<< ${mandatory_group_members}
+	    if grep --fixed-string "${mandatory_group}" <<< ${current_group_ids_for_ldap_dn}
 	    then
 		(
 		    echo "DEBUG: ${ldap_dn} is member of mandatory group ${mandatory_group}"
@@ -89,6 +99,8 @@ userHasCapabilities ()
 
     return 0
 }
+
+userHasCapabilities 'uid=alan ford,ou=people,dc=planetecitroen,dc=fr'
 
 revokeServiceBoxAccess ()
 {

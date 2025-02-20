@@ -124,16 +124,16 @@ then
     exit 1
 fi
 
-_group_url_arg="group=${INVISION_GROUP_ID1}"
+_group_url_arg="group[]=${INVISION_GROUP_ID1}"
 
 if [[ -n "${INVISION_GROUP_ID2}" ]]
 then
-    _group_url_arg+="&group=${INVISION_GROUP_ID2}"
+    _group_url_arg+="&group[]=${INVISION_GROUP_ID2}"
 fi
 
 if [[ -n "${INVISION_GROUP_ID3}" ]]
 then
-    _group_url_arg+="&group=${INVISION_GROUP_ID3}"
+    _group_url_arg+="&group[]=${INVISION_GROUP_ID3}"
 fi
 
 #FIXME: perPage should be a param

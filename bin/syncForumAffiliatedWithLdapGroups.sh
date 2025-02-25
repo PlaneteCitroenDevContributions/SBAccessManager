@@ -81,6 +81,14 @@ updateCloudProfilesCacheAndStopWithKey ()
 
 }
 
+clearCloudProfileCacheForCloudUID ()
+{
+    cloud_uid="$1"
+
+    rm -f "${_cach_dir}"/cloud_profile_"${cloud_uid}".json
+}
+
+
 
 getCloudProfileUID ()
 {
@@ -201,6 +209,8 @@ do
 	(
 	    echo "INFO: \"${dn}\" is now member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\""
 	) 1>&2
+	# User has been updated +> clear cache information
+	clearCloudProfileCacheForCloudUID "${cloud_id}"
     fi
 
 done < "${_cach_dir}/forumProfiles.txt"

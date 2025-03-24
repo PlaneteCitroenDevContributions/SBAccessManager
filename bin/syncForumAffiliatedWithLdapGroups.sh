@@ -108,7 +108,7 @@ clearCloudProfileCacheForCloudUID ()
 {
     cloud_uid="$1"
 
-    mv -f "${_cache_dir}"/cloud_profile_"${cloud_uid}".json "${_cache_dir}"/previous_run_cloud_profile_"${cloud_uid}".json
+    mv -f "${_cache_dir}"/cloud_profile_"${cloud_uid}".json "${_previous_run_cache_dir}"
 }
 
 clearNonRemanentCachedFiles ()
@@ -123,8 +123,11 @@ clearNonRemanentCachedFiles ()
 	obsolete_cloud_profile=$( grep --files-without-match --fixed-strings "\"${attribute}\": " cloud_profile_*.json )
 	for f in "${obsolete_cloud_profile}"
 	do
-	    mv -f "${f}" $( dirnanme "${f}")/previous_run
+	    mv -f "${f}" "${_previous_run_cache_dir}"
 	done
+    done
+
+    mv -f "${_cache_dir}/cloudMembers.json" "${_previous_run_cache_dir}"
 }
 
 
@@ -252,5 +255,7 @@ do
     fi
 
 done < "${_cache_dir}/forumProfiles.txt"
+
+clearNonRemanentCachedFiles
 
 exit 0

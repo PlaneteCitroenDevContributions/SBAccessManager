@@ -3,11 +3,28 @@
 HERE=$( dirname "$0" )
 PROJECT_ROOT_DIR="${HERE}/.."
 
-_cach_dir="/var/cache4sync"
+_cache_dir="/var/cache4sync"
+_previous_run_cache_dir="${_cache_dir}/previous_run"
 
 if [[ -n "${SHELL_DEBUG}" ]]
 then
     set -x
+fi
+
+if [[ -d "${_cache_dir}" ]]
+then
+    # cache dir exists
+    :
+else
+    mkdir -p "${_cache_dir}"
+fi
+
+if [[ -d "${_previous_run_cache_dir}" ]]
+then
+    # cache dir exists
+    :
+else
+    mkdir -p "${_previous_run_cache_dir}"
 fi
 
 : ${LDAP_URL:='ldap://ldap:3389'}
@@ -49,14 +66,20 @@ updateCloudProfilesCacheAndStopWithKey ()
 
     key_to_search_for="$1"
 
-    curl -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${_cach_dir}/cloudMembers.json" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users?format=json' -H "OCS-APIRequest: true"
+    if [[ -r "${_cache_dir}/cloudMembers.json" ]]
+    then
+	# we already downloaded the list of cloud members
+	:
+    else
+	curl -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${_cache_dir}/cloudMembers.json" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users?format=json' -H "OCS-APIRequest: true"
+    fi
 
-    jq -r '.ocs.data.users[]' "${_cach_dir}/cloudMembers.json" > "${_cach_dir}/cloudMembers.txt"
+    jq -r '.ocs.data.users[]' "${_cache_dir}/cloudMembers.json" > "${_cache_dir}/cloudMembers.txt"
 
     while read cloud_uid
     do
 
-	cloud_profile_cache_file_name="${_cach_dir}"/cloud_profile_"${cloud_uid}".json
+	cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
 
 	if [[ -r "${cloud_profile_cache_file_name}" ]]
 	then
@@ -77,7 +100,7 @@ updateCloudProfilesCacheAndStopWithKey ()
 	    fi
 	fi
 
-    done < "${_cach_dir}/cloudMembers.txt"
+    done < "${_cache_dir}/cloudMembers.txt"
 
 }
 
@@ -85,9 +108,24 @@ clearCloudProfileCacheForCloudUID ()
 {
     cloud_uid="$1"
 
-    rm -f "${_cach_dir}"/cloud_profile_"${cloud_uid}".json
+    mv -f "${_cache_dir}"/cloud_profile_"${cloud_uid}".json "${_cache_dir}"/previous_run_cloud_profile_"${cloud_uid}".json
 }
 
+clearNonRemanentCachedFiles ()
+{
+    #
+    # remove all cloud profile without mandatory attributes
+    #
+    mandatory_json_attributes="website"
+
+    for attribute in
+    do
+	obsolete_cloud_profile=$( grep --files-without-match --fixed-strings "\"${attribute}\": " cloud_profile_*.json )
+	for f in "${obsolete_cloud_profile}"
+	do
+	    mv -f "${f}" $( dirnanme "${f}")/previous_run
+	done
+}
 
 
 getCloudProfileUID ()
@@ -96,7 +134,7 @@ getCloudProfileUID ()
 
     # search in cached profiles once
     cloud_profile_entries=$(
-	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cach_dir}/cloud_profile_"*.json
+	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cache_dir}/cloud_profile_"*.json
 			 )
     if [[ -z "${cloud_profile_entries}" ]]
     then
@@ -107,7 +145,7 @@ getCloudProfileUID ()
 
     # search a second time, after cache update
     cloud_profile_entries=$(
-	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cach_dir}/cloud_profile_"*.json
+	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cache_dir}/cloud_profile_"*.json
 			 )
 
     if [[ -z "${cloud_profile_entries}" ]]
@@ -146,23 +184,23 @@ fi
 
 #FIXME: perPage should be a param
 
-curl -s -u "${INVISION_API_KEY}:" --output "${_cach_dir}/forumMembersWithAccess.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
+curl -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersWithAccess.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
 
 #
 # Extract Invision profile URL for all found members
 
-jq -r '.results[].profileUrl' "${_cach_dir}/forumMembersWithAccess.json" > "${_cach_dir}/forumProfiles.txt"
+jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersWithAccess.json" > "${_cache_dir}/forumProfiles.txt"
 
 #FIXME: test!!
-# > "${_cach_dir}/forumProfiles.txt"
-# echo 'https://www.planete-citroen.com/profile/1067-bernhara/' >> "${_cach_dir}/forumProfiles.txt"
-# echo 'https://www.planete-citroen.com/profile/2-nicolas/' >> "${_cach_dir}/forumProfiles.txt"
-# echo 'https://www.planete-citroen.com/profile/23962-alan-ford/' > "${_cach_dir}/forumProfiles.txt"
+# > "${_cache_dir}/forumProfiles.txt"
+# echo 'https://www.planete-citroen.com/profile/1067-bernhara/' >> "${_cache_dir}/forumProfiles.txt"
+# echo 'https://www.planete-citroen.com/profile/2-nicolas/' >> "${_cache_dir}/forumProfiles.txt"
+# echo 'https://www.planete-citroen.com/profile/23962-alan-ford/' > "${_cache_dir}/forumProfiles.txt"
 
 #
 # get current member list of affiliated group
 #
-getCurrentListOfUidsInAffiliatedGroup > "${_cach_dir}/affiliatedGroupMembers.json"
+getCurrentListOfUidsInAffiliatedGroup > "${_cache_dir}/affiliatedGroupMembers.json"
 
 while read line
 do
@@ -196,7 +234,7 @@ do
 
     dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    if grep -q --fixed-strings "${dn}" "${_cach_dir}/affiliatedGroupMembers.json"
+    if grep -q --fixed-strings "${dn}" "${_cache_dir}/affiliatedGroupMembers.json"
     then
 	# DN already member of affiliated group => skip
 	(
@@ -213,6 +251,6 @@ do
 	clearCloudProfileCacheForCloudUID "${cloud_id}"
     fi
 
-done < "${_cach_dir}/forumProfiles.txt"
+done < "${_cache_dir}/forumProfiles.txt"
 
 exit 0

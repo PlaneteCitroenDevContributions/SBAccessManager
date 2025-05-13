@@ -200,6 +200,11 @@ jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersWithAccess.json" > "${_
 # echo 'https://www.planete-citroen.com/profile/2-nicolas/' >> "${_cache_dir}/forumProfiles.txt"
 # echo 'https://www.planete-citroen.com/profile/23962-alan-ford/' > "${_cache_dir}/forumProfiles.txt"
 
+if [[ -n "${TEST_CONTENT4_forumProfiles}" ]]
+then
+    echo "${TEST_CONTENT4_forumProfiles}" > "${_cache_dir}/forumProfiles.txt"
+fi
+
 #
 # get current member list of affiliated group
 #

@@ -108,7 +108,10 @@ clearCloudProfileCacheForCloudUID ()
 {
     cloud_uid="$1"
 
-    mv -f "${_cache_dir}"/cloud_profile_"${cloud_uid}".json "${_previous_run_cache_dir}"
+    if [[ -r "${_cache_dir}"/cloud_profile_"${cloud_uid}".json ]]
+       # in some cases (DEBUG mode), this file may not have been generated
+       mv -f  "${_cache_dir}"/cloud_profile_"${cloud_uid}".json "${_previous_run_cache_dir}"
+    fi
 }
 
 clearNonRemanentCachedFiles ()

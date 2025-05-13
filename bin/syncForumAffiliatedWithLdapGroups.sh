@@ -109,6 +109,7 @@ clearCloudProfileCacheForCloudUID ()
     cloud_uid="$1"
 
     if [[ -r "${_cache_dir}"/cloud_profile_"${cloud_uid}".json ]]
+    then
        # in some cases (DEBUG mode), this file may not have been generated
        mv -f  "${_cache_dir}"/cloud_profile_"${cloud_uid}".json "${_previous_run_cache_dir}"
     fi

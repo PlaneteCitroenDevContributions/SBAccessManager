@@ -200,6 +200,11 @@ jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersWithAccess.json" > "${_
 # echo 'https://www.planete-citroen.com/profile/2-nicolas/' >> "${_cache_dir}/forumProfiles.txt"
 # echo 'https://www.planete-citroen.com/profile/23962-alan-ford/' > "${_cache_dir}/forumProfiles.txt"
 
+#
+#FIXME: the Forum profile URL store in the Website attribute must match exactly the URL of the Forum profile
+#       Mainly, the trailing '/' must be there
+
+
 if [[ -n "${TEST_CONTENT4_forumProfiles}" ]]
 then
     echo "${TEST_CONTENT4_forumProfiles}" > "${_cache_dir}/forumProfiles.txt"

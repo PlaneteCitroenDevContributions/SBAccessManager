@@ -39,6 +39,13 @@ env
 
 : ${CLOUD_AFFILIATED_LDAP_GROUP_NAME:='_NOT_INITILIZED_'}
 
+if [[ -z "${CURL_CURL_EXTRA_ARGs}" ]]
+then
+    CURL='curl'
+else
+    CURL="curl ${CURL_CURL_EXTRA_ARGs}"
+fi
+
 addUidToAffiliatedGroup ()
 {
     ldap_dn="$1"
@@ -71,7 +78,7 @@ updateCloudProfilesCacheAndStopWithKey ()
 	# we already downloaded the list of cloud members
 	:
     else
-	curl -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${_cache_dir}/cloudMembers.json" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users?format=json' -H "OCS-APIRequest: true"
+	${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${_cache_dir}/cloudMembers.json" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users?format=json' -H "OCS-APIRequest: true"
     fi
 
     jq -r '.ocs.data.users[]' "${_cache_dir}/cloudMembers.json" > "${_cache_dir}/cloudMembers.txt"
@@ -89,7 +96,7 @@ updateCloudProfilesCacheAndStopWithKey ()
 
 	    url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
 
-	    curl -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.' > "${cloud_profile_cache_file_name}"
+	    ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.' > "${cloud_profile_cache_file_name}"
 	fi
 
 	if [[ -n "${key_to_search_for}" ]]
@@ -191,7 +198,7 @@ fi
 
 #FIXME: perPage should be a param
 
-curl -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersWithAccess.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
+${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersWithAccess.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
 
 #
 # Extract Invision profile URL for all found members

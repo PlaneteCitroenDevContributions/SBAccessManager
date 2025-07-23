@@ -39,11 +39,11 @@ env
 
 : ${CLOUD_AFFILIATED_LDAP_GROUP_NAME:='_NOT_INITILIZED_'}
 
-if [[ -z "${CURL_CURL_EXTRA_ARGs}" ]]
+if [[ -z "${CURL_EXTRA_ARGs}" ]]
 then
     CURL='curl'
 else
-    CURL="curl ${CURL_CURL_EXTRA_ARGs}"
+    CURL="curl ${CURL_EXTRA_ARGs}"
 fi
 
 addUidToAffiliatedGroup ()

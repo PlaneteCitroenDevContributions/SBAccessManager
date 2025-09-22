@@ -129,7 +129,7 @@ clearNonRemanentCachedFiles ()
     #
     mandatory_json_attributes="website"
 
-    for attribute in
+    for attribute in ${mandatory_json_attributes}
     do
 	obsolete_cloud_profile=$( grep --files-without-match --fixed-strings "\"${attribute}\": " cloud_profile_*.json )
 	for f in "${obsolete_cloud_profile}"

@@ -131,11 +131,12 @@ clearNonRemanentCachedFiles ()
 
     for attribute in "${mandatory_json_attributes_array[@]}"
     do
-	obsolete_cloud_profile=$( grep --files-without-match --fixed-strings "\"${attribute}\": " cloud_profile_*.json )
-	for f in "${obsolete_cloud_profile}"
+	obsolete_cloud_profiles=$( grep --files-with-match --fixed-strings "\"${attribute}\": \"\"" "${_cache_dir}"/cloud_profile_*.json )
+	while read obsolete_cache_filename
 	do
-	    mv -f "${f}" "${_previous_run_cache_dir}"
-	done
+	    echo "XXXXX${obsolete_cache_filename}XXXXXXX"
+	    mv -f "${obsolete_cache_filename}" "${_previous_run_cache_dir}"
+	done <<< "${obsolete_cloud_profiles}"
     done
 
     mv -f "${_cache_dir}/cloudMembers.json" "${_previous_run_cache_dir}"
@@ -206,8 +207,8 @@ ${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersWithAcc
 jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersWithAccess.json" > "${_cache_dir}/forumProfiles.txt"
 
 #FIXME: test!!
-# > "${_cache_dir}/forumProfiles.txt"
-# echo 'https://www.planete-citroen.com/profile/1067-bernhara/' >> "${_cache_dir}/forumProfiles.txt"
+> "${_cache_dir}/forumProfiles.txt"
+echo 'https://www.planete-citroen.com/profile/1067-bernhara/' >> "${_cache_dir}/forumProfiles.txt"
 # echo 'https://www.planete-citroen.com/profile/2-nicolas/' >> "${_cache_dir}/forumProfiles.txt"
 # echo 'https://www.planete-citroen.com/profile/23962-alan-ford/' > "${_cache_dir}/forumProfiles.txt"
 

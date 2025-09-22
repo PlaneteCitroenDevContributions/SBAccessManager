@@ -127,9 +127,9 @@ clearNonRemanentCachedFiles ()
     #
     # remove all cloud profile without mandatory attributes
     #
-    mandatory_json_attributes="website"
+    mandatory_json_attributes_array=( 'website' )
 
-    for attribute in ${mandatory_json_attributes}
+    for attribute in "${mandatory_json_attributes_array[@]}"
     do
 	obsolete_cloud_profile=$( grep --files-without-match --fixed-strings "\"${attribute}\": " cloud_profile_*.json )
 	for f in "${obsolete_cloud_profile}"

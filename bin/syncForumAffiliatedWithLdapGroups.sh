@@ -134,11 +134,17 @@ clearNonRemanentCachedFiles ()
 	obsolete_cloud_profiles=$( grep --files-with-match --fixed-strings "\"${attribute}\": \"\"" "${_cache_dir}"/cloud_profile_*.json )
 	while read obsolete_cache_filename
 	do
-	    mv -f "${obsolete_cache_filename}" "${_previous_run_cache_dir}"
+	    if [[ -f "${obsolete_cache_filename}" ]]
+	    then
+		mv "${obsolete_cache_filename}" "${_previous_run_cache_dir}"
+	    fi
 	done <<< "${obsolete_cloud_profiles}"
     done
 
-    mv -f "${_cache_dir}/cloudMembers.json" "${_previous_run_cache_dir}"
+    if [[ -f "${_cache_dir}/cloudMembers.json" ]]
+    then
+	mv "${_cache_dir}/cloudMembers.json" "${_previous_run_cache_dir}"
+    fi
 }
 
 

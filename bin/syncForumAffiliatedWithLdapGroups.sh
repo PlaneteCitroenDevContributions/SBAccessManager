@@ -230,7 +230,7 @@ fi
 #
 # get current member list of affiliated group
 #
-getCurrentListOfUidsInAffiliatedGroup > "${_cache_dir}/affiliatedGroupMembers.json"
+getCurrentListOfUidsInAffiliatedGroup > "${_cache_dir}/affiliatedGroupMembers.txt"
 
 while read line
 do
@@ -264,7 +264,7 @@ do
 
     dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    if grep -q --fixed-strings "${dn}" "${_cache_dir}/affiliatedGroupMembers.json"
+    if grep -q --fixed-strings "${dn}" "${_cache_dir}/affiliatedGroupMembers.txt"
     then
 	# DN already member of affiliated group => skip
 	(

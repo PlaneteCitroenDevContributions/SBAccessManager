@@ -212,8 +212,8 @@ ${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersWithAcc
 jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersWithAccess.json" > "${_cache_dir}/forumProfiles.txt"
 
 #FIXME: test!!
-> "${_cache_dir}/forumProfiles.txt"
-echo 'https://www.planete-citroen.com/profile/1067-bernhara/' >> "${_cache_dir}/forumProfiles.txt"
+# > "${_cache_dir}/forumProfiles.txt"
+# echo 'https://www.planete-citroen.com/profile/1067-bernhara/' >> "${_cache_dir}/forumProfiles.txt"
 # echo 'https://www.planete-citroen.com/profile/2-nicolas/' >> "${_cache_dir}/forumProfiles.txt"
 # echo 'https://www.planete-citroen.com/profile/23962-alan-ford/' > "${_cache_dir}/forumProfiles.txt"
 

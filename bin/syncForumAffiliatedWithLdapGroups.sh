@@ -83,6 +83,8 @@ updateCloudProfilesCacheAndStopWithKey ()
 	# - have access to SB
 	# - are not already affiliated
 
+	# FIXME: the ldap filter should be a var
+
 	non_affiliated_users_with_sb_access=$( ${ldapsearch_cmd} \
 						   '(&(|(memberOf=cn=utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)(memberOf=cn=utilisateur-serviceboxplus,ou=groups,dc=planetecitroen,dc=fr))(!(memberOf=cn=ayantdroit-2025,ou=groups,dc=planetecitroen,dc=fr)))' \
 						   uid)

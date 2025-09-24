@@ -73,21 +73,22 @@ updateCloudProfilesCacheAndStopWithKey ()
 
     key_to_search_for="$1"
 
-    if [[ -r "${_cache_dir}/cloudMembers.json" ]]
+    if [[ -r "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt" ]]
     then
 	# we already downloaded the list of cloud members
 	:
     else
-	${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" --output "${_cache_dir}/cloudMembers.json" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users?format=json' -H "OCS-APIRequest: true"
+
+	# get the list of Cloud (from LDAP) user who
+	# - have access to SB
+	# - are not already affiliated
+
+	non_affiliated_users_with_sb_access=$( ${ldapsearch_cmd} \
+						   '(&(|(memberOf=cn=utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)(memberOf=cn=utilisateur-serviceboxplus,ou=groups,dc=planetecitroen,dc=fr))(!(memberOf=cn=ayantdroit-2025,ou=groups,dc=planetecitroen,dc=fr)))' \
+						   uid)
+
+	sed -n -e 's/^uid:[ \t]*//p' <<< "${non_affiliated_users_with_sb_access}" > "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
     fi
-
-    jq -r '.ocs.data.users[]' "${_cache_dir}/cloudMembers.json" > "${_cache_dir}/cloudMembers.txt"
-
-    non_affiliated_users_with_sb_access=$( ${ldapsearch_cmd} \
-	'(&(|(memberOf=cn=utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)(memberOf=cn=utilisateur-serviceboxplus,ou=groups,dc=planetecitroen,dc=fr))(!(memberOf=cn=ayantdroit-2025,ou=groups,dc=planetecitroen,dc=fr)))' \
-	uid)
-
-    sed -n -e 's/^uid:[ \t]*//p' <<< "${non_affiliated_users_with_sb_access}" > "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
 
     while read cloud_uid
     do
@@ -113,7 +114,6 @@ updateCloudProfilesCacheAndStopWithKey ()
 	    fi
 	fi
 
-#    done < "${_cache_dir}/cloudMembers.txt"
     done < "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
 
 }

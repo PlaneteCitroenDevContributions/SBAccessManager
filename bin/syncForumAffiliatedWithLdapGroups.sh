@@ -83,6 +83,12 @@ updateCloudProfilesCacheAndStopWithKey ()
 
     jq -r '.ocs.data.users[]' "${_cache_dir}/cloudMembers.json" > "${_cache_dir}/cloudMembers.txt"
 
+    non_affiliated_users_with_sb_access=$( ${ldapsearch_cmd} \
+	'(&(|(memberOf=cn=utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)(memberOf=cn=utilisateur-serviceboxplus,ou=groups,dc=planetecitroen,dc=fr))(!(memberOf=cn=ayantdroit-2025,ou=groups,dc=planetecitroen,dc=fr)))' \
+	uid)
+
+    sed -n -e 's/^uid:[ \t]*//p' <<< "${non_affiliated_users_with_sb_access}" > "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
+
     while read cloud_uid
     do
 
@@ -107,7 +113,8 @@ updateCloudProfilesCacheAndStopWithKey ()
 	    fi
 	fi
 
-    done < "${_cache_dir}/cloudMembers.txt"
+#    done < "${_cache_dir}/cloudMembers.txt"
+    done < "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
 
 }
 

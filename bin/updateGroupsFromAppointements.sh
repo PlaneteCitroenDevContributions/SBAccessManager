@@ -20,6 +20,55 @@ export LANG='en_US.utf8'
 
 : ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
 
+_notify_by_mail ()
+{
+
+    email_to_address="$1"
+    html_body_file_name="$2"
+
+    # FIXME:
+    email_to_address='raphael.bernhard@orange.fr'
+
+    mail_subject="[PC][NextCloud][SB] Votre réservation n'a pa pu être honorée"
+
+    if [[ -r "${html_body_file_name}" ]]
+    then
+	# file exists
+	:
+    else
+        # Skip action
+        return 0
+    fi
+    
+    if [[ -z "${SMTP_HOST}" ]]
+    then
+        # Skip action
+        return 0
+    fi
+
+    : ${RAW_MAIL_FILE:=$( mktemp --dry-run --suffix=_raw_mail4action_notification.txt )}
+    : ${SMTP_PORT:=25}
+
+    (
+        echo 'Content-Type: text/html; charset="utf-8"'
+        echo 'Content-Transfer-Encoding: base64'
+        echo "From: staff@planete-citroen.com"
+        echo "To: ${email_to_address}"
+        echo "Subject: ${mail_subject}"
+        echo
+        cat "${html_body_file_name}" | base64
+    ) > "${RAW_MAIL_FILE}"
+
+    curl --silent --show-error \
+        --mail-from 'staff@planete-citroen.com' \
+        --mail-rcpt "${email_to_address}" \
+        --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
+        --upload-file "${RAW_MAIL_FILE}"
+
+    #!! rm -f "${RAW_MAIL_FILE}"
+}
+
+
 getVCalData ()
 {
     ics_url="$1"
@@ -90,6 +139,7 @@ userHasCapabilities ()
 	    else
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
+		    _notify_by_mail "${cloud_user_email}" "${HERE}/etc/mail_body_error_for_${var_name}"
 		) 1>&2
 		return 1
 	    fi

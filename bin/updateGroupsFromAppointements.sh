@@ -139,7 +139,11 @@ userHasCapabilities ()
 	    else
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
-		    _notify_by_mail "${cloud_user_email}" "${HERE}/etc/mail_body_error_for_${var_name}"
+		    email_address_for_ldap_uid=$(
+			eval ${dsidm_cmd_to_evaluate} user get \'${uid}\' | \
+			    jq -r '.attrs.mail[]' )
+		    
+		    _notify_by_mail "${email_address_for_ldap_uid}" "${HERE}/etc/mail_body_error_for_${var_name}"
 		) 1>&2
 		return 1
 	    fi

@@ -20,14 +20,79 @@ export LANG='en_US.utf8'
 
 : ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
 
+_notification_state_to_beginning ()
+{
+    ldap_dn="$1"
+
+    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    rm -f "${notification_status_file}"
+}
+
+_notification_state_to_requested ()
+{
+    ldap_dn="$1"
+    mailto="$2"
+
+    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    (
+	echo 'state:RESQUESTED'
+	echo "mail:${mailto}"
+    ) > "${notification_status_file}"
+}
+
+_notification_state_to_none ()
+{
+    ldap_dn="$1"
+
+    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    (
+	echo 'state:NONE'
+    ) > "${notification_status_file}"
+}
+
+_notification_state_to_sent ()
+{
+    ldap_dn="$1"
+
+    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    (
+	echo 'state:SENT'
+    ) > "${notification_status_file}"
+}
+
 _notify_by_mail ()
 {
 
-    email_to_address="$1"
+    ldap_dn="$1"
     html_body_file_name="$2"
 
-    # FIXME:
-    email_to_address='raphael.bernhard@orange.fr'
+    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+
+    if [[ -r "${notification_status_file}" ]]
+    then
+	# a status file has been generated
+	:
+    else
+	return 0
+    fi
+
+    notification_status=$(
+	cat "${notification_status_file}" | sed -n -e 's/^status://p'
+		       )
+
+    case "${notification_status}" in
+	'REQUESTED')
+	    :
+	    ;;
+	*)
+	    # nothing to do
+	    return 0
+    esac
+	
+
+    email_to_address=$(
+	cat "${notification_status_file}" | sed -n -e 's/^mail://p'
+		    )
 
     if [[ -r "${html_body_file_name}" ]]
     then
@@ -67,6 +132,8 @@ _notify_by_mail ()
 
     # FIXME:
     #!! rm -f "${RAW_MAIL_FILE}"
+
+    _notification_state_to_sent "${ldap_dn}"
 }
 
 
@@ -140,11 +207,7 @@ userHasCapabilities ()
 	    else
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
-		    email_address_for_ldap_uid=$(
-			eval ${dsidm_cmd_to_evaluate} user get \'${uid}\' | \
-			    jq -r '.attrs.mail[]' )
-		    
-		    _notify_by_mail "${email_address_for_ldap_uid}" "${HERE}/etc/mail_body_error_for_${var_name}"
+		    _notify_by_mail "${ldap_dn}" "${HERE}/etc/mail_body_error_for_${var_name}"
 		) 1>&2
 		return 1
 	    fi
@@ -233,6 +296,15 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
     dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
     appointed_DNs_array+=( "${dn}" )
+
+    # set notification status file
+    if grep --silent --ignore-case --fixed-strings '[N]' <<< "${summary_data}"
+    then
+	_notification_state_to_requested "${dn}" "${mailto}"
+    else
+	_notification_state_to_none "${dn}"
+    fi	
+EOF
 
 done
 
@@ -333,6 +405,7 @@ do
     (
 	echo "INFO: revoked acces to DN \"${dn}\""
     ) 1>&2
+    _notification_state_to_beginning "${dn}"
 done
 
 (

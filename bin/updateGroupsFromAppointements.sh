@@ -181,14 +181,22 @@ declare -a appointed_DNs_array=()
 for ics_url in $( echo "${ics_url_list}" )
 do
 
-    vcal_data=$( getVCalData ${ics_url} )
+    raw_vcal_data=$( getVCalData ${ics_url} )
+
+    vcal_data=$(
+	echo "${raw_vcal_data}" | sed -e 's/\r$//'
+	     )
 
     organizer_line=$(
 	echo "${vcal_data}" | grep -e '^ORGANIZER;'
 		  )
 
     organizer_data=$(
-	echo "${organizer_line}" | sed -e 's/ORGANIZER;//' -e 's/\r$//'
+	echo "${vcal_data}" | sed -n -e 's/ORGANIZER;//p'
+	     )
+
+    summary_data=$(
+	echo "${vcal_data}" | sed -n -e 's/^SUMMARY://p'
 	     )
 
     displayName=$( echo "${organizer_data}" | sed -e 's/CN=\(.*\):mailto:.*$/\1/' )

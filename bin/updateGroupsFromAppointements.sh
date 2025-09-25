@@ -187,10 +187,6 @@ do
 	echo "${raw_vcal_data}" | sed -e 's/\r$//'
 	     )
 
-    organizer_line=$(
-	echo "${vcal_data}" | grep -e '^ORGANIZER;'
-		  )
-
     organizer_data=$(
 	echo "${vcal_data}" | sed -n -e 's/ORGANIZER;//p'
 	     )

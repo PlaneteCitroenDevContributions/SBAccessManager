@@ -19,14 +19,6 @@ else
     mkdir -p "${_cache_dir}"
 fi
 
-if [[ -d "${_previous_run_cache_dir}" ]]
-then
-    # cache dir exists
-    :
-else
-    mkdir -p "${_previous_run_cache_dir}"
-fi
-
 : ${LDAP_URL:='ldap://ldap:3389'}
 
 dsidm_cmd_to_evaluate="dsidm --basedn 'dc=planetecitroen,dc=fr' --binddn 'cn=Directory Manager' --pwdfile '/etc/pwdfile.txt' --json '${LDAP_URL}'"
@@ -68,29 +60,26 @@ revokeServiceBoxAccess ()
     eval ${dsidm_cmd_to_evaluate} group remove_member \'${ALLOWING_LDAP_GROUP_NAME}\'  \'${ldap_dn}\'
 }
 
+getcloudNonAffiliatedMembersWithSbAccess ()
+{
+    # get the list of Cloud (from LDAP) user who
+    # - have access to SB
+    # - are not already affiliated
+
+    # FIXME: the ldap filter should be a var
+
+    non_affiliated_users_with_sb_access=$( ${ldapsearch_cmd} \
+					       '(&(|(memberOf=cn=utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)(memberOf=cn=utilisateur-serviceboxplus,ou=groups,dc=planetecitroen,dc=fr))(!(memberOf=cn=ayantdroit-2025,ou=groups,dc=planetecitroen,dc=fr)))' \
+					       uid)
+
+    sed -n -e 's/^uid:[ \t]*//p' <<< "${non_affiliated_users_with_sb_access}"
+}
+
+
 updateCloudProfilesCacheAndStopWithKey ()
 {
 
     key_to_search_for="$1"
-
-    if [[ -r "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt" ]]
-    then
-	# we already downloaded the list of cloud members
-	:
-    else
-
-	# get the list of Cloud (from LDAP) user who
-	# - have access to SB
-	# - are not already affiliated
-
-	# FIXME: the ldap filter should be a var
-
-	non_affiliated_users_with_sb_access=$( ${ldapsearch_cmd} \
-						   '(&(|(memberOf=cn=utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)(memberOf=cn=utilisateur-serviceboxplus,ou=groups,dc=planetecitroen,dc=fr))(!(memberOf=cn=ayantdroit-2025,ou=groups,dc=planetecitroen,dc=fr)))' \
-						   uid)
-
-	sed -n -e 's/^uid:[ \t]*//p' <<< "${non_affiliated_users_with_sb_access}" > "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
-    fi
 
     while read cloud_uid
     do
@@ -131,7 +120,23 @@ clearCloudProfileCacheForCloudUID ()
     fi
 }
 
-clearNonRemanentCachedFiles ()
+_initCache ()
+{
+
+    if [[ -d "${_previous_run_cache_dir}" ]]
+    then
+	# cache dir exists
+	:
+    else
+	mkdir -p "${_previous_run_cache_dir}"
+    fi
+
+    # remove possible files from a previous run
+    mv -f "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt" "${_previous_run_cache_dir}"
+    mv -f "${_cache_dir}/forumMembersWithAccess.json"
+}
+
+_clearNonRemanentCachedFiles ()
 {
     #
     # remove all cloud profile without mandatory attributes
@@ -211,6 +216,15 @@ then
     _group_url_arg+="&group[]=${INVISION_GROUP_ID3}"
 fi
 
+#
+# Main
+# ====
+
+_initCache
+
+getcloudNonAffiliatedMembersWithSbAccess > "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt}"
+
+# get all Forum affiliated members
 #FIXME: perPage should be a param
 
 ${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersWithAccess.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
@@ -292,6 +306,6 @@ do
 
 done < "${_cache_dir}/forumProfiles.txt"
 
-clearNonRemanentCachedFiles
+_clearNonRemanentCachedFiles
 
 exit 0

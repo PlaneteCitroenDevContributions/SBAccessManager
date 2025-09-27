@@ -133,7 +133,7 @@ _initCache ()
 
     # remove possible files from a previous run
     mv -f "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt" "${_previous_run_cache_dir}"
-    mv -f "${_cache_dir}/forumMembersWithAccess.json"
+    mv -f "${_cache_dir}/forumMembersWithAccess.json" "${_previous_run_cache_dir}"
 }
 
 _clearNonRemanentCachedFiles ()
@@ -222,7 +222,7 @@ fi
 
 _initCache
 
-getcloudNonAffiliatedMembersWithSbAccess > "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt}"
+getcloudNonAffiliatedMembersWithSbAccess > "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
 
 # get all Forum affiliated members
 #FIXME: perPage should be a param
@@ -254,6 +254,8 @@ fi
 # get current member list of affiliated group
 #
 getCurrentListOfUidsInAffiliatedGroup > "${_cache_dir}/affiliatedGroupMembers.txt"
+
+exit 1
 
 while read line
 do

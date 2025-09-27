@@ -40,24 +40,30 @@ fi
 
 addUidToAffiliatedGroup ()
 {
-    ldap_dn="$1"
+    uid="$1"
 
-    eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' \'${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\'  \'${ldap_dn}\'
+    eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' \'${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\'  \'${uid}\'
     
 }
 
 getCurrentListOfUidsInAffiliatedGroup ()
 {
 
-    eval ${dsidm_cmd_to_evaluate} 'group' 'members' \'${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\'
+    affiliated_uids=$( ${ldapsearch_cmd} \
+			   '(memberOf=cn='"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"'utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)' \
+			    uid)
+
+    sed -n -e 's/^uid:[ \t]*//p' <<< "${affiliated_uids}"
+
+#!!!!    eval ${dsidm_cmd_to_evaluate} 'group' 'members' \'${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\'
     
 }
 
 revokeServiceBoxAccess ()
 {
-    ldap_dn="$1"
+    uid="$1"
 
-    eval ${dsidm_cmd_to_evaluate} group remove_member \'${ALLOWING_LDAP_GROUP_NAME}\'  \'${ldap_dn}\'
+    eval ${dsidm_cmd_to_evaluate} group remove_member \'${ALLOWING_LDAP_GROUP_NAME}\'  \'${uid}\'
 }
 
 getcloudNonAffiliatedMembersWithSbAccess ()
@@ -74,8 +80,6 @@ getcloudNonAffiliatedMembersWithSbAccess ()
 
     sed -n -e 's/^uid:[ \t]*//p' <<< "${non_affiliated_users_with_sb_access}"
 }
-
-
 updateCloudProfilesCacheAndStopWithKey ()
 {
 
@@ -255,8 +259,6 @@ fi
 #
 getCurrentListOfUidsInAffiliatedGroup > "${_cache_dir}/affiliatedGroupMembers.txt"
 
-exit 1
-
 while read line
 do
     echo "DEBUG: syncing ${line}"
@@ -287,20 +289,20 @@ do
 	# NOT REACHED
     fi
 
-    dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
+    #!!!!dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    if grep -q --fixed-strings "${dn}" "${_cache_dir}/affiliatedGroupMembers.txt"
+    if grep -q --fixed-strings "${cloud_uid}" "${_cache_dir}/affiliatedGroupMembers.txt"
     then
 	# DN already member of affiliated group => skip
 	(
-	    echo "INFO: \"${dn}\" is already member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\". SKIP action."
+	    echo "INFO: \"${cloud_uid}\" is already member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\". SKIP action."
 	) 1>&2
 
     else
 	
-	addUidToAffiliatedGroup "${dn}"
+	addUidToAffiliatedGroup "${cloud_uid}"
 	(
-	    echo "INFO: \"${dn}\" is now member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\""
+	    echo "INFO: \"${cloud_uid}\" is now member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\""
 	) 1>&2
 	# User has been updated +> clear cache information
 	clearCloudProfileCacheForCloudUID "${cloud_id}"

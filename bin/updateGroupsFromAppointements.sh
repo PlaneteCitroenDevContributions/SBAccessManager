@@ -29,8 +29,6 @@ _notify_by_mail ()
     # FIXME:
     email_to_address='raphael.bernhard@orange.fr'
 
-    mail_subject="[PC][NextCloud][SB] Votre réservation n'a pa pu être honorée"
-
     if [[ -r "${html_body_file_name}" ]]
     then
 	# file exists
@@ -45,6 +43,8 @@ _notify_by_mail ()
         # Skip action
         return 0
     fi
+
+    mail_subject="[PC][ServiceBox] Votre réservation n'a pa pu être honorée"
 
     : ${RAW_MAIL_FILE:=$( mktemp --dry-run --suffix=_raw_mail4action_notification.txt )}
     : ${SMTP_PORT:=25}
@@ -65,6 +65,7 @@ _notify_by_mail ()
         --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
         --upload-file "${RAW_MAIL_FILE}"
 
+    # FIXME:
     #!! rm -f "${RAW_MAIL_FILE}"
 }
 
@@ -139,7 +140,11 @@ userHasCapabilities ()
 	    else
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
-		    _notify_by_mail "${cloud_user_email}" "${HERE}/etc/mail_body_error_for_${var_name}"
+		    email_address_for_ldap_uid=$(
+			eval ${dsidm_cmd_to_evaluate} user get \'${uid}\' | \
+			    jq -r '.attrs.mail[]' )
+		    
+		    _notify_by_mail "${email_address_for_ldap_uid}" "${HERE}/etc/mail_body_error_for_${var_name}"
 		) 1>&2
 		return 1
 	    fi

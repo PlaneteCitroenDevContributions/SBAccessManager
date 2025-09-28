@@ -50,7 +50,7 @@ getCurrentListOfUidsInAffiliatedGroup ()
 {
 
     affiliated_uids=$( ${ldapsearch_cmd} \
-			   '(memberOf=cn='"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"'utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)' \
+			   '(memberOf=cn='"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}"',ou=groups,dc=planetecitroen,dc=fr)' \
 			    uid)
 
     sed -n -e 's/^uid:[ \t]*//p' <<< "${affiliated_uids}"

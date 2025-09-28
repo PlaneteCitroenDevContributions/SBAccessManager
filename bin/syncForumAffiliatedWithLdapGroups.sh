@@ -66,7 +66,7 @@ revokeServiceBoxAccess ()
     eval ${dsidm_cmd_to_evaluate} group remove_member \'${ALLOWING_LDAP_GROUP_NAME}\'  \'${uid}\'
 }
 
-getcloudNonAffiliatedMembersWithSbAccess ()
+getCloudNonAffiliatedMembersWithSbAccess ()
 {
     # get the list of Cloud (from LDAP) user who
     # - have access to SB
@@ -226,7 +226,7 @@ fi
 
 _initCache
 
-getcloudNonAffiliatedMembersWithSbAccess > "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
+getCloudNonAffiliatedMembersWithSbAccess > "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
 
 # get all Forum affiliated members
 #FIXME: perPage should be a param

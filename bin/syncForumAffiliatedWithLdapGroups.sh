@@ -284,25 +284,25 @@ do
 	# ldap search result OK
 	:
     else
-	echo "INTERNAL ERROR: Could not file \"${uid}\" in ldap" 1>&2
+	echo "INTERNAL ERROR: Could not file \"${cloud_id}\" in ldap" 1>&2
 	continue
 	# NOT REACHED
     fi
 
     #!!!!dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
 
-    if grep -q --fixed-strings "${cloud_uid}" "${_cache_dir}/affiliatedGroupMembers.txt"
+    if grep -q --fixed-strings "${cloud_id}" "${_cache_dir}/affiliatedGroupMembers.txt"
     then
 	# DN already member of affiliated group => skip
 	(
-	    echo "INFO: \"${cloud_uid}\" is already member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\". SKIP action."
+	    echo "INFO: \"${cloud_id}\" is already member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\". SKIP action."
 	) 1>&2
 
     else
 	
-	addUidToAffiliatedGroup "${cloud_uid}"
+	addUidToAffiliatedGroup "${cloud_id}"
 	(
-	    echo "INFO: \"${cloud_uid}\" is now member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\""
+	    echo "INFO: \"${cloud_id}\" is now member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\""
 	) 1>&2
 	# User has been updated +> clear cache information
 	clearCloudProfileCacheForCloudUID "${cloud_id}"

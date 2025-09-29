@@ -55,8 +55,6 @@ getCurrentListOfUidsInAffiliatedGroup ()
 
     sed -n -e 's/^uid:[ \t]*//p' <<< "${affiliated_uids}"
 
-#!!!!    eval ${dsidm_cmd_to_evaluate} 'group' 'members' \'${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\'
-    
 }
 
 revokeServiceBoxAccess ()

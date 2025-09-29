@@ -289,8 +289,6 @@ do
 	# NOT REACHED
     fi
 
-    #!!!!dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
-
     if grep -q --fixed-strings "${cloud_id}" "${_cache_dir}/affiliatedGroupMembers.txt"
     then
 	# DN already member of affiliated group => skip
@@ -300,7 +298,8 @@ do
 
     else
 	
-	addUidToAffiliatedGroup "${cloud_id}"
+	dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
+	addUidToAffiliatedGroup "${dn}"
 	(
 	    echo "INFO: \"${cloud_id}\" is now member of group \"${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\""
 	) 1>&2

@@ -40,9 +40,9 @@ fi
 
 addUidToAffiliatedGroup ()
 {
-    uid="$1"
+    dn="$1"
 
-    eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' \'${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\'  \'${uid}\'
+    eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' \'${CLOUD_AFFILIATED_LDAP_GROUP_NAME}\'  \'${dn}\'
     
 }
 

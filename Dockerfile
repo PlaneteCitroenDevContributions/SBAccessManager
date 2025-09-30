@@ -23,6 +23,11 @@ RUN dnf install -y \
     && \
     dnf clean all
 
+RUN dnf install -y --allowerasing \
+       curl \
+    && \
+    dnf clean all
+
 RUN dnf install -y \
        jq \
     && \

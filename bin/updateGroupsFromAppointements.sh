@@ -111,7 +111,8 @@ _notify_by_mail ()
 
     mail_subject="[PC][ServiceBox] Votre réservation n'a pa pu être honorée"
 
-    : ${RAW_MAIL_FILE:=$( mktemp --dry-run --suffix=_raw_mail4action_notification.txt )}
+    raw_mail_file="/tmp/notification_raw_mail_file_${ldap_dn}"
+
     : ${SMTP_PORT:=25}
 
     (
@@ -122,16 +123,13 @@ _notify_by_mail ()
         echo "Subject: ${mail_subject}"
         echo
         cat "${html_body_file_name}" | base64
-    ) > "${RAW_MAIL_FILE}"
+    ) > "${raw_mail_file}"
 
     curl --silent --show-error \
         --mail-from 'staff@planete-citroen.com' \
         --mail-rcpt "${email_to_address}" \
         --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
-        --upload-file "${RAW_MAIL_FILE}"
-
-    # FIXME:
-    #!! rm -f "${RAW_MAIL_FILE}"
+        --upload-file "${raw_mail_file}"
 
     _notification_state_to_sent "${ldap_dn}"
 }
@@ -298,13 +296,12 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
     appointed_DNs_array+=( "${dn}" )
 
     # set notification status file
-    if grep --silent --ignore-case --fixed-strings '[N]' <<< "${summary_data}"
+    if grep --silent --ignore-case --fixed-strings '[S]' <<< "${summary_data}"
     then
-	_notification_state_to_requested "${dn}" "${mailto}"
-    else
 	_notification_state_to_none "${dn}"
+    else
+	_notification_state_to_requested "${dn}" "${mailto}"
     fi	
-EOF
 
 done
 

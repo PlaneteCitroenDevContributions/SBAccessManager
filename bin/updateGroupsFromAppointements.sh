@@ -9,6 +9,8 @@ then
     env
 fi
 
+: ${ETC_DIR:="${HERE}/../etc"}
+
 : ${LDAP_URL:='ldap://ldap:3389'}
 
 dsidm_cmd_to_evaluate="dsidm --basedn 'dc=planetecitroen,dc=fr' --binddn 'cn=Directory Manager' --pwdfile '/etc/pwdfile.txt' --json '${LDAP_URL}'"
@@ -28,26 +30,33 @@ _notification_state_to_beginning ()
     rm -f "${notification_status_file}"
 }
 
-_notification_state_to_requested ()
-{
-    ldap_dn="$1"
-    mailto="$2"
-
-    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
-    (
-	echo 'state:RESQUESTED'
-	echo "mail:${mailto}"
-    ) > "${notification_status_file}"
-}
-
 _notification_state_to_none ()
 {
     ldap_dn="$1"
 
     notification_status_file="/tmp/notification_status_for_${ldap_dn}"
     (
-	echo 'state:NONE'
+	echo 'status:NONE'
     ) > "${notification_status_file}"
+}
+
+_notification_state_to_requested ()
+{
+    ldap_dn="$1"
+
+    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    (
+	echo 'status:REQUESTED'
+    ) > "${notification_status_file}"
+}
+
+_notification_state_add_requested ()
+{
+    ldap_dn="$1"
+    mail_body_file_name="$2"
+
+    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    echo "body:${mail_body_file_name}" >> "${notification_status_file}"
 }
 
 _notification_state_to_sent ()
@@ -60,13 +69,18 @@ _notification_state_to_sent ()
     ) > "${notification_status_file}"
 }
 
-_notify_by_mail ()
+_notify_flush_requests ()
 {
 
     ldap_dn="$1"
-    html_body_file_name="$2"
 
     notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+
+    if [[ -z "${SMTP_HOST}" ]]
+    then
+        # Skip action
+        return 0
+    fi
 
     if [[ -r "${notification_status_file}" ]]
     then
@@ -94,44 +108,45 @@ _notify_by_mail ()
 	cat "${notification_status_file}" | sed -n -e 's/^mail://p'
 		    )
 
-    if [[ -r "${html_body_file_name}" ]]
-    then
-	# file exists
-	:
-    else
-        # Skip action
-        return 0
-    fi
-    
-    if [[ -z "${SMTP_HOST}" ]]
-    then
-        # Skip action
-        return 0
-    fi
 
-    mail_subject="[PC][ServiceBox] Votre réservation n'a pa pu être honorée"
-
-    raw_mail_file="/tmp/notification_raw_mail_file_${ldap_dn}"
+    body_list=$(
+	cat "${notification_status_file}" | sed -n -e 's/^body://p'
+	     )
 
     : ${SMTP_PORT:=25}
+    mail_subject="[PC][ServiceBox] Votre réservation n'a pa pu être honorée"
+    raw_mail_file="/tmp/notification_raw_mail_file_${ldap_dn}"
 
-    (
-        echo 'Content-Type: text/html; charset="utf-8"'
-        echo 'Content-Transfer-Encoding: base64'
-        echo "From: staff@planete-citroen.com"
-        echo "To: ${email_to_address}"
-        echo "Subject: ${mail_subject}"
-        echo
-        cat "${html_body_file_name}" | base64
-    ) > "${raw_mail_file}"
+    #!!!!!!
+    email_to_address='raphael.bernhard@orange.fr'
 
-    curl --silent --show-error \
-        --mail-from 'staff@planete-citroen.com' \
-        --mail-rcpt "${email_to_address}" \
-        --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
-        --upload-file "${raw_mail_file}"
+    while IFS= read -r html_body_file_name
+    do
+	
+	if [[ -r "${html_body_file_name}" ]]
+	then
 
-    _notification_state_to_sent "${ldap_dn}"
+	    (
+		echo 'Content-Type: text/html; charset="utf-8"'
+		echo 'Content-Transfer-Encoding: base64'
+		echo "From: staff@planete-citroen.com"
+		echo "To: ${email_to_address}"
+		echo "Subject: ${mail_subject}"
+		echo
+		cat "${html_body_file_name}" | base64
+	    ) > "${raw_mail_file}"
+
+	    curl --silent --show-error \
+		 --mail-from 'staff@planete-citroen.com' \
+		 --mail-rcpt "${email_to_address}" \
+		 --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
+		 --upload-file "${raw_mail_file}"
+	else
+	    echo "INTERNAL ERROR: Could not notification file \"${html_body_file_name}\"" 1>&2
+	fi
+    done <<< "${body_list}"
+    
+
 }
 
 
@@ -205,7 +220,7 @@ userHasCapabilities ()
 	    else
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
-		    _notify_by_mail "${ldap_dn}" "${HERE}/etc/mail_body_error_for_${var_name}"
+		    _notification_state_add_requested "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_name}.html"
 		) 1>&2
 		return 1
 	    fi
@@ -358,6 +373,11 @@ done <<< ${appointed_minus_allowed_DNs}
 # grant access to appointed DNs not already granted
 #
 
+#!!!!
+echo '#######################################################"' 1>&2
+new_DNs_array=( 'uid=bernhara,ou=people,dc=planetecitroen,dc=fr' )
+
+
 for dn in "${new_DNs_array[@]}"
 do
     if userHasCapabilities "${dn}"
@@ -371,6 +391,9 @@ do
 	    echo "INFO: user with DN \"${dn}\" does not have the required capabilies"
 	) 1>&2
     fi
+
+    _notify_flush_requests "${dn}"
+    
 done
 
 #

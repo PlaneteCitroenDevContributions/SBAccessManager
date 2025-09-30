@@ -23,8 +23,8 @@ RUN dnf install -y \
     && \
     dnf clean all
 
-RUN dnf install -y --allowerasing \
-       curl \
+RUN dnf swap -y
+       libcurl-minimal libcurl-full \
     && \
     dnf clean all
 

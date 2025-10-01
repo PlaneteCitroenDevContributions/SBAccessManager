@@ -32,17 +32,19 @@ _notification_state_to_beginning ()
 
 _notification_state_to_none ()
 {
-    ldap_dn="$1"
+    vcal_uid="$1"
+    ldap_dn="$2"
 
     notification_status_file="/tmp/notification_status_for_${ldap_dn}"
     (
-	echo 'status:NONE'
+	echo "status/${vcal_uid}:NONE"
     ) > "${notification_status_file}"
 }
 
 _notification_state_to_requested ()
 {
-    ldap_dn="$1"
+    vcal_uid="$1"
+    ldap_dn="$2"
 
     notification_status_file="/tmp/notification_status_for_${ldap_dn}"
     (
@@ -58,7 +60,7 @@ _notify_once()
     notification_status_file="/tmp/notification_status_for_${ldap_dn}"
 
     current_status_line=$(
-	grep --silent --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
+	grep --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
 		       )
 
     if [[ -z "${current_status_line}" ]]
@@ -88,7 +90,7 @@ _notification_sent ()
     # recreate file
     (
 	# keep all lines, exept for mail_body_file_name
-	grep -v --silent --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
+	grep -v --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
 	# add "sent" status for it
 	echo "sent_once:${mail_body_file_name}"
     ) > "${notification_status_file}"
@@ -250,7 +252,7 @@ userHasCapabilities ()
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
 		) 1>&2
-		_notification_requested_once "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_name}.html"
+		_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_name}.html"
 		return 1
 	    fi
 
@@ -290,6 +292,10 @@ do
 
     vcal_data=$(
 	echo "${raw_vcal_data}" | sed -e 's/\r$//'
+	     )
+
+    uid_data=$(
+	echo "${vcal_data}" | sed -n -e 's/UID://p'
 	     )
 
     organizer_data=$(
@@ -342,11 +348,44 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
     # set notification status file
     if grep --silent --ignore-case --fixed-strings '[S]' <<< "${summary_data}"
     then
-	_notification_state_to_none "${dn}"
+	_notification_state_to_none "${uid_data}" "${dn}"
     else
-	_notification_state_to_requested "${dn}" "${mailto}"
+	_notification_state_to_requested "${uid_data}" "${dn}" "${mailto}"
     fi	
 
+    # grant access if not already granted
+
+    # check if access is already granted
+    currently_allowed_DNs=$(
+	
+	# dsidm may return line with empty DNs => remove these empty lines
+	
+	eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | \
+	    sed -n -e '/^dn: /s/^dn: //p' | \
+	    sed -e '/^[ \t]*$/d' )
+
+    if grep --silent --fixed-strings "${dn}" <<< "${currently_allowed_DNs}"
+    then
+	# already granted
+	continue
+    else
+	#
+	if userHasCapabilities "${dn}"
+	then
+	    grantServiceBoxAccess "${dn}"
+	    (
+		echo "INFO: granted acces to DN \"${dn}\""
+	    ) 1>&2
+	    appointed_DNs_array+=( "${line}" )
+	else
+	    (
+		echo "INFO: user with DN \"${dn}\" does not have the required capabilies"
+	    ) 1>&2
+	fi
+
+	_notify_flush_requests "${uid_data}" "${dn}"
+    fi
+    
 done
 
 (
@@ -357,78 +396,35 @@ done
     done
 ) 1>&2
 
-allowed_DNs_ldap_search_result=$(
+#
+# revoke all users who did not reserve and are currently allowed
+#
 
+#
+# get all allowed DNs
+#
+currently_allowed_DNs=$(
+	
     # dsidm may return line with empty DNs => remove these empty lines
-
+	
     eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | \
 	sed -n -e '/^dn: /s/^dn: //p' | \
 	sed -e '/^[ \t]*$/d' )
+
 # store result in array
-declare -a allowed_DNs_array=()
-while IFS= read -r line; do
+declare -a  allowed_DNs_array=()
+while IFS= read -r line
+do
     # skip eventual empty lines
     if [[ -n "${line}" ]]
     then
 	allowed_DNs_array+=( "${line}" )
     fi
-done <<< ${allowed_DNs_ldap_search_result}
-#
-# allow new users who reserved and are not already allowed
-#
-
-appointed_minus_allowed_DNs=$(
-    
-    for dn in "${allowed_DNs_array[@]}" "${allowed_DNs_array[@]}" "${appointed_DNs_array[@]}"
-    do
-	echo "${dn}"
-    done | \
-    sort | \
-    uniq -u
-)
-# store result in array
-declare -a  new_DNs_array=()
-while IFS= read -r line; do
-    # skip eventual empty lines
-    if [[ -n "${line}" ]]
-    then
-	new_DNs_array+=( "${line}" )
-    fi
-done <<< ${appointed_minus_allowed_DNs}
-
-
+done <<< ${currently_allowed_DNs}
 
 #
-# grant access to appointed DNs not already granted
+# get those who are allowed, but not appointed
 #
-
-#!!!!
-echo '#######################################################"' 1>&2
-new_DNs_array=( 'uid=bernhara,ou=people,dc=planetecitroen,dc=fr' )
-
-
-for dn in "${new_DNs_array[@]}"
-do
-    if userHasCapabilities "${dn}"
-    then
-	grantServiceBoxAccess "${dn}"
-	(
-	    echo "INFO: granted acces to DN \"${dn}\""
-	) 1>&2
-    else
-	(
-	    echo "INFO: user with DN \"${dn}\" does not have the required capabilies"
-	) 1>&2
-    fi
-
-    _notify_flush_requests "${dn}"
-    
-done
-
-#
-# revoke all users who did not reserve and are currently allowed
-#
-
 allowed_DNs_minus_appointed=$(
     
     for dn in "${appointed_DNs_array[@]}" "${appointed_DNs_array[@]}" "${allowed_DNs_array[@]}"

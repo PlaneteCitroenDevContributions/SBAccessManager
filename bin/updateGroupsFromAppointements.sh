@@ -22,7 +22,7 @@ export LANG='en_US.utf8'
 
 : ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
 
-_notification_state_to_beginning ()
+_notification_reset ()
 {
     ldap_dn="$1"
 
@@ -376,6 +376,7 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 	    (
 		echo "INFO: granted acces to DN \"${dn}\""
 	    ) 1>&2
+	    _notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_grant_${ALLOWING_LDAP_GROUP_NAME}.html"
 	    appointed_DNs_array+=( "${line}" )
 	else
 	    (
@@ -388,6 +389,9 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
     
 done
 
+#
+# Only for tracing
+#
 (
     echo "INFO: currently appointed DNs"
     for dn in "${appointed_DNs_array[@]}"
@@ -450,9 +454,14 @@ do
     (
 	echo "INFO: revoked acces to DN \"${dn}\""
     ) 1>&2
-    _notification_state_to_beginning "${dn}"
+    _notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_revoke_${ALLOWING_LDAP_GROUP_NAME}.html"
+    _notify_flush_requests "${dn}"
+    _notifications_reset "${dn}"
 done
 
+#
+# Only for tracing
+#
 (
     echo "INFO: current members of LDAP group \"${ALLOWING_LDAP_GROUP_NAME}\""
     eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | sed -e 's/^/\t==>/'

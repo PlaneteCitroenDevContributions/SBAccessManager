@@ -50,23 +50,49 @@ _notification_state_to_requested ()
     ) > "${notification_status_file}"
 }
 
-_notification_state_add_requested ()
+_notify_once()
 {
     ldap_dn="$1"
     mail_body_file_name="$2"
 
     notification_status_file="/tmp/notification_status_for_${ldap_dn}"
-    echo "body:${mail_body_file_name}" >> "${notification_status_file}"
+
+    current_status_line=$(
+	grep --silent --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
+		       )
+
+    if [[ -z "${current_status_line}" ]]
+    then
+	echo "body_once:${mail_body_file_name}" >> "${notification_status_file}"
+    else
+	case "${current_status_line}" in
+	    "sent_once:"*)
+	    # already sent
+		:
+		;;
+	    *)
+		# should not happen
+		:
+		;;
+	esac
+    fi
 }
 
-_notification_state_to_sent ()
+_notification_sent ()
 {
     ldap_dn="$1"
+    mail_body_file_name="$2"
 
     notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+
+    # recreate file
     (
-	echo 'state:SENT'
+	# keep all lines, exept for mail_body_file_name
+	grep -v --silent --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
+	# add "sent" status for it
+	echo "sent_once:${mail_body_file_name}"
     ) > "${notification_status_file}"
+
 }
 
 _notify_flush_requests ()
@@ -144,6 +170,9 @@ _notify_flush_requests ()
 	else
 	    echo "INTERNAL ERROR: Could not notification file \"${html_body_file_name}\"" 1>&2
 	fi
+
+	_notification_sent "${ldap_dn}" "${html_body_file_name}"
+	
     done <<< "${body_list}"
     
 
@@ -220,8 +249,8 @@ userHasCapabilities ()
 	    else
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
-		    _notification_state_add_requested "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_name}.html"
 		) 1>&2
+		_notification_requested_once "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_name}.html"
 		return 1
 	    fi
 

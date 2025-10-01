@@ -32,19 +32,17 @@ _notification_reset ()
 
 _notification_state_to_none ()
 {
-    vcal_uid="$1"
-    ldap_dn="$2"
+    ldap_dn="$1"
 
     notification_status_file="/tmp/notification_status_for_${ldap_dn}"
     (
-	echo "status/${vcal_uid}:NONE"
+	echo "status:NONE"
     ) > "${notification_status_file}"
 }
 
 _notification_state_to_requested ()
 {
-    vcal_uid="$1"
-    ldap_dn="$2"
+    ldap_dn="$1"
 
     notification_status_file="/tmp/notification_status_for_${ldap_dn}"
     (
@@ -252,7 +250,7 @@ userHasCapabilities ()
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
 		) 1>&2
-		_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_name}.html"
+		_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_val}.html"
 		return 1
 	    fi
 
@@ -348,9 +346,9 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
     # set notification status file
     if grep --silent --ignore-case --fixed-strings '[S]' <<< "${summary_data}"
     then
-	_notification_state_to_none "${uid_data}" "${dn}"
+	_notification_state_to_none "${dn}"
     else
-	_notification_state_to_requested "${uid_data}" "${dn}" "${mailto}"
+	_notification_state_to_requested "${dn}" "${mailto}"
     fi	
 
     # grant access if not already granted
@@ -367,25 +365,32 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
     if grep --silent --fixed-strings "${dn}" <<< "${currently_allowed_DNs}"
     then
 	# already granted
-	continue
-    else
-	#
-	if userHasCapabilities "${dn}"
+	if grep --silent --fixed-strings '**DEV**' <<< "${summary_data}"
 	then
-	    grantServiceBoxAccess "${dn}"
-	    (
-		echo "INFO: granted acces to DN \"${dn}\""
-	    ) 1>&2
-	    _notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_grant_${ALLOWING_LDAP_GROUP_NAME}.html"
-	    appointed_DNs_array+=( "${line}" )
+	    # FOR TEST ONLY
+	    :
 	else
-	    (
-		echo "INFO: user with DN \"${dn}\" does not have the required capabilies"
-	    ) 1>&2
+	    continue
 	fi
-
-	_notify_flush_requests "${uid_data}" "${dn}"
+	# NOT REACHED
     fi
+
+    #
+    if userHasCapabilities "${dn}"
+    then
+	grantServiceBoxAccess "${dn}"
+	(
+	    echo "INFO: granted acces to DN \"${dn}\""
+	) 1>&2
+	_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_grant_${ALLOWING_LDAP_GROUP_NAME}.html"
+	appointed_DNs_array+=( "${line}" )
+    else
+	(
+	    echo "INFO: user with DN \"${dn}\" does not have the required capabilies"
+	) 1>&2
+    fi
+
+    _notify_flush_requests "${dn}"
     
 done
 

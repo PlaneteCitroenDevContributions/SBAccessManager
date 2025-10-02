@@ -33,12 +33,18 @@ __dump_notification_status_file ()
 {
     
     ldap_dn="$1"
+    prefix="$2"
+
+    if [[ -z "${prefix}" ]]
+    then
+	prefix='======='
+    fi
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
     echo '*****'
     date
-    cat "${notification_status_file}"
+    cat "${notification_status_file}" | sed -e "s/^/${prefix}   /g"
     echo '*****'
 
 }
@@ -68,11 +74,24 @@ _notification_state_to_requested ()
     ldap_dn="$1"
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
-    (
-	echo 'status:REQUESTED'
-    ) > "${notification_status_file}"
 
-    __dump_notification_status_file "${ldap_dn}"
+    if [[ -r "${notification_status_file}" ]]
+    then
+	:
+    else
+	touch "${notification_status_file}"
+    fi
+
+    # recreate file
+    notification_status_file_new_content=$(
+	# keep all lines, exept for mail_body_file_name
+	sed -e '/^status:/d' "${notification_status_file}"
+	echo 'status:REQUESTED' )
+
+    echo "${notification_status_file_new_content}" > "${notification_status_file}"
+    
+    __dump_notification_status_file "${ldap_dn}" "TO_REQUESTED"
+
 }
 
 _notify_once()

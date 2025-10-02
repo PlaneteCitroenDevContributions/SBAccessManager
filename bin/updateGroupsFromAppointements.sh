@@ -103,7 +103,8 @@ _notify_once()
 
     __dump_notification_status_file "${ldap_dn}"
 
-    current_status_line=$( grep --fixed-strings "${mail_body_file_name}" "${notification_status_file}" )
+    set -x
+    current_status_line=$( grep --fixed-strings "${mail_body_file_name_prefix}" "${notification_status_file}" )
 
     if [[ -z "${current_status_line}" ]]
     then
@@ -120,6 +121,7 @@ _notify_once()
 		;;
 	esac
     fi
+    set +x
     __dump_notification_status_file "${ldap_dn}"
 }
 
@@ -445,7 +447,7 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 	(
 	    echo "INFO: granted acces to DN \"${dn}\""
 	) 1>&2
-	_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_grant_${ALLOWING_LDAP_GROUP_NAME}"
+	_notify_once "${ldap_dn}" "${ETC_DIR}/mail_grant_${ALLOWING_LDAP_GROUP_NAME}"
 	appointed_DNs_array+=( "${line}" )
     else
 	(
@@ -522,7 +524,7 @@ do
     (
 	echo "INFO: revoked acces to DN \"${dn}\""
     ) 1>&2
-    _notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_revoke_${ALLOWING_LDAP_GROUP_NAME}"
+    _notify_once "${ldap_dn}" "${ETC_DIR}/mail_revoke_${ALLOWING_LDAP_GROUP_NAME}"
     _notify_flush_requests "${dn}"
     _notifications_reset "${dn}"
 done

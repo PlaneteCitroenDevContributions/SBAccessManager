@@ -51,7 +51,7 @@ __dump_notification_status_file ()
 
 }
 
-_notification_reset ()
+_notifications_reset ()
 {
     ldap_dn="$1"
 
@@ -181,7 +181,6 @@ _notify_flush_requests ()
 		    )
 
 
-    set -x
     mail_attribute_list=$(
 	cat "${notification_status_file}" | sed -n -e 's/^mail_once://p'
 	     )
@@ -238,7 +237,6 @@ _notify_flush_requests ()
 	_notification_sent "${ldap_dn}" "${mail_attribute}"
 	
     done <<< "${mail_attribute_list}"
-    set +x
 
 }
 

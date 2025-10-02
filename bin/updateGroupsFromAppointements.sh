@@ -112,7 +112,7 @@ _notify_once()
 
     if [[ -z "${current_status_line}" ]]
     then
-	echo "body_once:${mail_body_file_name}" >> "${notification_status_file}"
+	echo "mail_once:${mail_body_file_name}" >> "${notification_status_file}"
     else
 	case "${current_status_line}" in
 	    "sent_once:"*)
@@ -187,23 +187,32 @@ _notify_flush_requests ()
 		    )
 
 
-    body_list=$(
-	cat "${notification_status_file}" | sed -n -e 's/^body_once://p'
+    mail_attribute_list=$(
+	cat "${notification_status_file}" | sed -n -e 's/^mail_once://p'
 	     )
 
     : ${SMTP_PORT:=25}
-    mail_subject="[PC][ServiceBox] Votre réservation n'a pa pu être honorée"
-    raw_mail_file="/tmp/notification_raw_mail_file_${ldap_dn}"
 
     #!!!!!!
     email_to_address='raphael.bernhard@orange.fr'
 
-    while IFS= read -r html_body_file_name
+    raw_mail_file="/tmp/notification_raw_mail_file_${ldap_dn}"
+    while IFS= read -r mail_attribute
     do
+
+	subject_file_name="${mail_attribute}.subject.txt"
+	html_body_file_name="${mail_attribute}.body.html"
 	
-	if [[ -z "${html_body_file_name}" ]]
+	if [[ -z "${html_body_file_name}" || -z "${subject_file_name}" ]]
 	then
 	    continue
+	fi
+
+	if [[ -r "${subject_file_name}" ]]
+	then
+	    mail_subject=$( cat "${subject_file_name}" )
+	else
+	    mail_subject='[PC][ServiceBox] Notication suite à votre réservation'
 	fi
 
 	if [[ -r "${html_body_file_name}" ]]
@@ -232,7 +241,6 @@ _notify_flush_requests ()
 	_notification_sent "${ldap_dn}" "${html_body_file_name}"
 	
     done <<< "${body_list}"
-    
 
 }
 

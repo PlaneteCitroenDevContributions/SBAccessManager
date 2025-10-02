@@ -128,7 +128,7 @@ _notify_once()
 _notification_sent ()
 {
     ldap_dn="$1"
-    mail_body_file_name="$2"
+    mail_file_name_prefix="$2"
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
     __dump_notification_status_file "${ldap_dn}"
@@ -136,9 +136,9 @@ _notification_sent ()
     # recreate file
     notification_status_file_new_content=$(
 	# keep all lines, exept for mail_body_file_name
-	grep -v --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
+	grep -v --fixed-strings "${mail_file_name_prefix}" "${notification_status_file}"
 	# add "sent" status for it
-	echo "sent_once:${mail_body_file_name}"
+	echo "sent_once:${mail_file_name_prefix}"
 					)
     echo "${notification_status_file_new_content}" > "${notification_status_file}"
     __dump_notification_status_file "${ldap_dn}"
@@ -178,7 +178,7 @@ _notify_flush_requests ()
 	    return 0
     esac
 	
-
+    set -x
     email_to_address=$(
 	cat "${notification_status_file}" | sed -n -e 's/^mail://p'
 		    )
@@ -237,9 +237,10 @@ _notify_flush_requests ()
 	    echo "ERROR: Could not find notification file \"${html_body_file_name}\"" 1>&2
 	fi
 
-	_notification_sent "${ldap_dn}" "${html_body_file_name}"
+	_notification_sent "${ldap_dn}" "${mail_attribute}"
 	
-    done <<< "${body_list}"
+    done <<< "${mail_attribute_list}"
+    set +x
 
 }
 
@@ -315,7 +316,7 @@ userHasCapabilities ()
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
 		) 1>&2
-		_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_val}"
+		_notify_once "${ldap_dn}" "${ETC_DIR}/mail_error_for_${var_val}"
 		return 1
 	    fi
 

@@ -72,6 +72,7 @@ _notification_state_to_none ()
 _notification_state_to_requested ()
 {
     ldap_dn="$1"
+    mailto="$2"
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
@@ -85,7 +86,8 @@ _notification_state_to_requested ()
     # recreate file
     notification_status_file_new_content=$(
 	# keep all lines, exept for mail_body_file_name
-	sed -e '/^status:/d' "${notification_status_file}"
+	sed -e '/^status:/d' -e '/^mailto:/d' "${notification_status_file}"
+	echo "mailto:${mailto}"
 	echo 'status:REQUESTED' )
 
     echo "${notification_status_file_new_content}" > "${notification_status_file}"
@@ -177,7 +179,7 @@ _notify_flush_requests ()
     esac
 	
     email_to_address=$(
-	cat "${notification_status_file}" | sed -n -e 's/^mail://p'
+	cat "${notification_status_file}" | sed -n -e 's/^mailto://p'
 		    )
 
 
@@ -224,12 +226,16 @@ _notify_flush_requests ()
 		cat "${html_body_file_name}" | base64
 	    ) > "${raw_mail_file}"
 
-	    echo '############ DO SEND'
-	    NO_curl --silent --show-error \
+	    curl --silent --show-error \
 		 --mail-from 'staff@planete-citroen.com' \
 		 --mail-rcpt "${email_to_address}" \
 		 --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
 		 --upload-file "${raw_mail_file}"
+
+	    (
+		echo "INFO: mail sent to ${email_to_address} with subject: ${mail_subject}"
+	    ) 1>&2
+
 	else
 	    echo "ERROR: Could not find notification file \"${html_body_file_name}\"" 1>&2
 	fi

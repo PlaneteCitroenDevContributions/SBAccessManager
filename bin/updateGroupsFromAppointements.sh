@@ -90,7 +90,7 @@ _notification_state_to_requested ()
 
     echo "${notification_status_file_new_content}" > "${notification_status_file}"
     
-    __dump_notification_status_file "${ldap_dn}" "TO_REQUESTED"
+    __dump_notification_status_file "${ldap_dn}" "=====TO_REQUESTED"
 
 }
 
@@ -101,9 +101,8 @@ _notify_once()
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
-    __dump_notification_status_file "${ldap_dn}"
+    __dump_notification_status_file "${ldap_dn}" "=====ADD ONCE"
 
-    set -x
     current_status_line=$( grep --fixed-strings "${mail_body_file_name_prefix}" "${notification_status_file}" )
 
     if [[ -z "${current_status_line}" ]]
@@ -121,8 +120,7 @@ _notify_once()
 		;;
 	esac
     fi
-    set +x
-    __dump_notification_status_file "${ldap_dn}"
+    __dump_notification_status_file "${ldap_dn}" "=====ONCE ADDED"
 }
 
 _notification_sent ()
@@ -131,7 +129,7 @@ _notification_sent ()
     mail_file_name_prefix="$2"
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
-    __dump_notification_status_file "${ldap_dn}"
+    __dump_notification_status_file "${ldap_dn}" "===== BEFORE SENT"
 
     # recreate file
     notification_status_file_new_content=$(
@@ -141,7 +139,7 @@ _notification_sent ()
 	echo "sent_once:${mail_file_name_prefix}"
 					)
     echo "${notification_status_file_new_content}" > "${notification_status_file}"
-    __dump_notification_status_file "${ldap_dn}"
+    __dump_notification_status_file "${ldap_dn}" "===== SENT"
 }
 
 _notify_flush_requests ()
@@ -178,12 +176,12 @@ _notify_flush_requests ()
 	    return 0
     esac
 	
-    set -x
     email_to_address=$(
 	cat "${notification_status_file}" | sed -n -e 's/^mail://p'
 		    )
 
 
+    set -x
     mail_attribute_list=$(
 	cat "${notification_status_file}" | sed -n -e 's/^mail_once://p'
 	     )
@@ -197,7 +195,7 @@ _notify_flush_requests ()
     while IFS= read -r mail_attribute
     do
 
-	if [[ -z "${mail_attribute}}" ]]
+	if [[ -z "${mail_attribute}" ]]
 	then
 	    # limit case where an empty string is passed here
 	    continue

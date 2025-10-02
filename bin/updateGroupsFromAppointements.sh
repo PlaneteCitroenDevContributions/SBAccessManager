@@ -22,11 +22,19 @@ export LANG='en_US.utf8'
 
 : ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
 
+_get_notification_status_file_name ()
+{
+    ldap_dn="$1"
+
+    echo "/tmp/notification_status_for_${ldap_dn}"
+}
+
+
 _notification_reset ()
 {
     ldap_dn="$1"
 
-    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
     rm -f "${notification_status_file}"
 }
 
@@ -34,7 +42,7 @@ _notification_state_to_none ()
 {
     ldap_dn="$1"
 
-    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
     (
 	echo "status:NONE"
     ) > "${notification_status_file}"
@@ -44,7 +52,7 @@ _notification_state_to_requested ()
 {
     ldap_dn="$1"
 
-    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
     (
 	echo 'status:REQUESTED'
     ) > "${notification_status_file}"
@@ -55,7 +63,7 @@ _notify_once()
     ldap_dn="$1"
     mail_body_file_name="$2"
 
-    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
     current_status_line=$(
 	grep --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
@@ -83,7 +91,7 @@ _notification_sent ()
     ldap_dn="$1"
     mail_body_file_name="$2"
 
-    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
     # recreate file
     (
@@ -100,7 +108,7 @@ _notify_flush_requests ()
 
     ldap_dn="$1"
 
-    notification_status_file="/tmp/notification_status_for_${ldap_dn}"
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
     if [[ -z "${SMTP_HOST}" ]]
     then

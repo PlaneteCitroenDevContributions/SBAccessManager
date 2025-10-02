@@ -195,19 +195,21 @@ _notify_flush_requests ()
     while IFS= read -r mail_attribute
     do
 
-	subject_file_name="${mail_attribute}.subject.txt"
-	html_body_file_name="${mail_attribute}.body.html"
-	
-	if [[ -z "${html_body_file_name}" || -z "${subject_file_name}" ]]
+	if [[ -z "${mail_attribute}}" ]]
 	then
+	    # limit case where an empty string is passed here
 	    continue
 	fi
 
+	subject_file_name="${mail_attribute}.subject.txt"
+	html_body_file_name="${mail_attribute}.body.html"
+	
 	if [[ -r "${subject_file_name}" ]]
 	then
 	    mail_subject=$( cat "${subject_file_name}" )
 	else
 	    mail_subject='[PC][ServiceBox] Notication suite à votre réservation'
+	    echo "INFO: notification subject file \"${subject_file_name}\" not found. Using default subject"
 	fi
 
 	if [[ -r "${html_body_file_name}" ]]
@@ -230,7 +232,7 @@ _notify_flush_requests ()
 		 --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
 		 --upload-file "${raw_mail_file}"
 	else
-	    echo "INTERNAL ERROR: Could not find notification file \"${html_body_file_name}\"" 1>&2
+	    echo "ERROR: Could not find notification file \"${html_body_file_name}\"" 1>&2
 	fi
 
 	_notification_sent "${ldap_dn}" "${html_body_file_name}"

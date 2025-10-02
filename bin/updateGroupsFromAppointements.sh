@@ -42,14 +42,14 @@ __dump_notification_status_file ()
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
-    echo '*****'
-    date
-    cat "${notification_status_file}" | sed -e "s/^/${prefix}   /g"
-    echo '*****'
+    (
+	echo '*****'
+	date
+	cat "${notification_status_file}" | sed -e "s/^/${prefix}   /g"
+	echo '*****'
+    ) 1>&2
 
 }
-
-
 
 _notification_reset ()
 {
@@ -97,7 +97,7 @@ _notification_state_to_requested ()
 _notify_once()
 {
     ldap_dn="$1"
-    mail_body_file_name="$2"
+    mail_body_file_name_prefix="$2"
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
@@ -105,14 +105,9 @@ _notify_once()
 
     current_status_line=$( grep --fixed-strings "${mail_body_file_name}" "${notification_status_file}" )
 
-    echo '###########################################""'
-    echo "${current_status_line}"
-    grep --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
-    echo '###########################################""'
-
     if [[ -z "${current_status_line}" ]]
     then
-	echo "mail_once:${mail_body_file_name}" >> "${notification_status_file}"
+	echo "mail_once:${mail_body_file_name_prefix}" >> "${notification_status_file}"
     else
 	case "${current_status_line}" in
 	    "sent_once:"*)
@@ -121,7 +116,7 @@ _notify_once()
 		;;
 	    *)
 		# should not happen
-		:
+		echo "INTERNAL ERROR: notification status file ${notification_status_file} contains unknow status: ${current_status_line}" 1>&2
 		;;
 	esac
     fi
@@ -316,7 +311,7 @@ userHasCapabilities ()
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
 		) 1>&2
-		_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_val}.html"
+		_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_error_for_${var_val}"
 		return 1
 	    fi
 
@@ -448,7 +443,7 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 	(
 	    echo "INFO: granted acces to DN \"${dn}\""
 	) 1>&2
-	_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_grant_${ALLOWING_LDAP_GROUP_NAME}.html"
+	_notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_grant_${ALLOWING_LDAP_GROUP_NAME}"
 	appointed_DNs_array+=( "${line}" )
     else
 	(
@@ -525,7 +520,7 @@ do
     (
 	echo "INFO: revoked acces to DN \"${dn}\""
     ) 1>&2
-    _notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_revoke_${ALLOWING_LDAP_GROUP_NAME}.html"
+    _notify_once "${ldap_dn}" "${ETC_DIR}/mail_body_revoke_${ALLOWING_LDAP_GROUP_NAME}"
     _notify_flush_requests "${dn}"
     _notifications_reset "${dn}"
 done

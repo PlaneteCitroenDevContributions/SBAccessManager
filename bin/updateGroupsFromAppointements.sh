@@ -37,16 +37,16 @@ __dump_notification_status_file ()
 
     if [[ -z "${prefix}" ]]
     then
-	prefix='======='
+	prefix='======= '
     fi
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
     (
-	echo '*****'
-	date
-	cat "${notification_status_file}" | sed -e "s/^/${prefix}   /g"
-	echo '*****'
+	echo "${prefix}BEGIN:${ldap_dn}"
+	echo "${prefix}$( date )"
+	cat "${notification_status_file}" | sed -e "s/^/${prefix}/g"
+	echo "${prefix}END:${ldap_dn}"
     ) 1>&2
 
 }
@@ -90,7 +90,7 @@ _notification_state_to_requested ()
 
     echo "${notification_status_file_new_content}" > "${notification_status_file}"
     
-    __dump_notification_status_file "${ldap_dn}" "=====TO_REQUESTED"
+    __dump_notification_status_file "${ldap_dn}" "=====TO_REQUESTED "
 
 }
 
@@ -101,7 +101,7 @@ _notify_once()
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
-    __dump_notification_status_file "${ldap_dn}" "=====ADD ONCE"
+    __dump_notification_status_file "${ldap_dn}" "=====ADD ONCE "
 
     current_status_line=$( grep --fixed-strings "${mail_body_file_name_prefix}" "${notification_status_file}" )
 
@@ -120,7 +120,7 @@ _notify_once()
 		;;
 	esac
     fi
-    __dump_notification_status_file "${ldap_dn}" "=====ONCE ADDED"
+    __dump_notification_status_file "${ldap_dn}" "=====ONCE ADDED "
 }
 
 _notification_sent ()
@@ -129,7 +129,7 @@ _notification_sent ()
     mail_file_name_prefix="$2"
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
-    __dump_notification_status_file "${ldap_dn}" "===== BEFORE SENT"
+    __dump_notification_status_file "${ldap_dn}" "===== BEFORE SENT "
 
     # recreate file
     notification_status_file_new_content=$(
@@ -139,7 +139,7 @@ _notification_sent ()
 	echo "sent_once:${mail_file_name_prefix}"
 					)
     echo "${notification_status_file_new_content}" > "${notification_status_file}"
-    __dump_notification_status_file "${ldap_dn}" "===== SENT"
+    __dump_notification_status_file "${ldap_dn}" "===== SENT "
 }
 
 _notify_flush_requests ()

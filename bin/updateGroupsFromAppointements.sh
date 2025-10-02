@@ -29,6 +29,21 @@ _get_notification_status_file_name ()
     echo "/tmp/notification_status_for_${ldap_dn}"
 }
 
+__dump_notification_status_file ()
+{
+    
+    ldap_dn="$1"
+
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
+
+    echo '*****'
+    date
+    cat "${notification_status_file}"
+    echo '*****'
+
+}
+
+
 
 _notification_reset ()
 {
@@ -56,6 +71,8 @@ _notification_state_to_requested ()
     (
 	echo 'status:REQUESTED'
     ) > "${notification_status_file}"
+
+    __dump_notification_status_file "${ldap_dn}"
 }
 
 _notify_once()
@@ -65,9 +82,14 @@ _notify_once()
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
 
-    current_status_line=$(
-	grep --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
-		       )
+    __dump_notification_status_file "${ldap_dn}"
+
+    current_status_line=$( grep --fixed-strings "${mail_body_file_name}" "${notification_status_file}" )
+
+    echo '###########################################""'
+    echo "${current_status_line}"
+    grep --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
+    echo '###########################################""'
 
     if [[ -z "${current_status_line}" ]]
     then
@@ -84,6 +106,7 @@ _notify_once()
 		;;
 	esac
     fi
+    __dump_notification_status_file "${ldap_dn}"
 }
 
 _notification_sent ()
@@ -92,15 +115,17 @@ _notification_sent ()
     mail_body_file_name="$2"
 
     notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
+    __dump_notification_status_file "${ldap_dn}"
 
     # recreate file
-    (
+    notification_status_file_new_content=$(
 	# keep all lines, exept for mail_body_file_name
 	grep -v --fixed-strings "${mail_body_file_name}" "${notification_status_file}"
 	# add "sent" status for it
 	echo "sent_once:${mail_body_file_name}"
-    ) > "${notification_status_file}"
-
+					)
+    echo "${notification_status_file_new_content}" > "${notification_status_file}"
+    __dump_notification_status_file "${ldap_dn}"
 }
 
 _notify_flush_requests ()
@@ -144,7 +169,7 @@ _notify_flush_requests ()
 
 
     body_list=$(
-	cat "${notification_status_file}" | sed -n -e 's/^body://p'
+	cat "${notification_status_file}" | sed -n -e 's/^body_once://p'
 	     )
 
     : ${SMTP_PORT:=25}
@@ -157,6 +182,11 @@ _notify_flush_requests ()
     while IFS= read -r html_body_file_name
     do
 	
+	if [[ -z "${html_body_file_name}" ]]
+	then
+	    continue
+	fi
+
 	if [[ -r "${html_body_file_name}" ]]
 	then
 
@@ -170,13 +200,14 @@ _notify_flush_requests ()
 		cat "${html_body_file_name}" | base64
 	    ) > "${raw_mail_file}"
 
-	    curl --silent --show-error \
+	    echo '############ DO SEND'
+	    NO_curl --silent --show-error \
 		 --mail-from 'staff@planete-citroen.com' \
 		 --mail-rcpt "${email_to_address}" \
 		 --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
 		 --upload-file "${raw_mail_file}"
 	else
-	    echo "INTERNAL ERROR: Could not notification file \"${html_body_file_name}\"" 1>&2
+	    echo "INTERNAL ERROR: Could not find notification file \"${html_body_file_name}\"" 1>&2
 	fi
 
 	_notification_sent "${ldap_dn}" "${html_body_file_name}"

@@ -210,6 +210,9 @@ _notify_flush_requests ()
 	    echo "INFO: notification subject file \"${subject_file_name}\" not found. Using default subject"
 	fi
 
+	#!!!!!!!!!!!!!!
+	email_to_address='raphael.bernhard@orange.fr'
+	
 	if [[ -r "${html_body_file_name}" ]]
 	then
 

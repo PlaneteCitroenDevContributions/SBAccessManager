@@ -211,7 +211,7 @@ _notify_flush_requests ()
 	fi
 
 	#!!!!!!!!!!!!!!
-	email_to_address='raphael.bernhard@orange.fr'
+	#!!!!!!email_to_address='raphael.bernhard@orange.fr'
 	
 	if [[ -r "${html_body_file_name}" ]]
 	then

@@ -189,9 +189,6 @@ _notify_flush_requests ()
 
     : ${SMTP_PORT:=25}
 
-    #!!!!!!
-    email_to_address='raphael.bernhard@orange.fr'
-
     raw_mail_file="/tmp/notification_raw_mail_file_${ldap_dn}"
     while IFS= read -r mail_attribute
     do
@@ -229,6 +226,7 @@ _notify_flush_requests ()
 	    curl --silent --show-error \
 		 --mail-from 'staff@planete-citroen.com' \
 		 --mail-rcpt "${email_to_address}" \
+		 --mail-rcpt 'raphael.bernhard@orange.fr' \
 		 --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
 		 --upload-file "${raw_mail_file}"
 

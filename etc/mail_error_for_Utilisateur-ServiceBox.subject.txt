@@ -1,1 +1,1 @@
-[PC][ServiceBox] ERREUR: vos accès ne vous permettent pas d'accéder à la documentation par ServiceBox-DOC
+[PC][ServiceBox] ERREUR: vos accès ne vous permettent pas d'accéder à la documentation par ServiceBox-PR

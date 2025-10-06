@@ -1,1 +1,3 @@
-[PC][ServiceBox] ERREUR: vos accès ne vous permettent pas d'accéder à la documentation par ServiceBox-DOC
+=?UTF-8?Q?=5BPC=5D=5BServiceBox=5D_ERREUR=3A_vos_acc=C3=A8s_ne_vous?=
+ =?UTF-8?Q?_permettent_pas_d=27acc=C3=A9der_=C3=A0_la_documentation_par_Serv?=
+ =?UTF-8?Q?iceBox-DOC?=

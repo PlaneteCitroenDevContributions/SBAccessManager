@@ -91,8 +91,10 @@ updateCloudProfilesCacheAndStopWithKey ()
 	if [[ -r "${cloud_profile_cache_file_name}" ]]
 	then
 	    # we already donwloaded the data
-	    :
+	    echo "DEBUG: use cache files ${cloud_profile_cache_file_name}" 1>&2
 	else
+
+	    echo "DEBUG: rebuild cache files ${cloud_profile_cache_file_name}" 1>&2
 
 	    url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
 
@@ -259,7 +261,7 @@ getCurrentListOfUidsInAffiliatedGroup > "${_cache_dir}/affiliatedGroupMembers.tx
 
 while read line
 do
-    echo "DEBUG: syncing ${line}"
+    echo "DEBUG: syncing ${line}" 1>&2
 
     invision_profile_url="${line}"
 

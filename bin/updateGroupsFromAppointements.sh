@@ -9,6 +9,8 @@ then
     env
 fi
 
+: ${ETC_DIR:="${HERE}/../etc"}
+
 : ${LDAP_URL:='ldap://ldap:3389'}
 
 dsidm_cmd_to_evaluate="dsidm --basedn 'dc=planetecitroen,dc=fr' --binddn 'cn=Directory Manager' --pwdfile '/etc/pwdfile.txt' --json '${LDAP_URL}'"
@@ -20,53 +22,229 @@ export LANG='en_US.utf8'
 
 : ${PYTHON_BIN:="${PROJECT_ROOT_DIR}/.venv/bin/python"}
 
-_notify_by_mail ()
+_get_notification_status_file_name ()
 {
+    ldap_dn="$1"
 
-    email_to_address="$1"
-    html_body_file_name="$2"
+    echo "/tmp/notification_status_for_${ldap_dn}"
+}
 
-    # FIXME:
-    email_to_address='raphael.bernhard@orange.fr'
+__dump_notification_status_file ()
+{
+    
+    ldap_dn="$1"
+    prefix="$2"
 
-    if [[ -r "${html_body_file_name}" ]]
+    if [[ -z "${prefix}" ]]
     then
-	# file exists
+	prefix='======= '
+    fi
+
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
+
+    (
+	echo "${prefix}BEGIN:${ldap_dn}"
+	echo "${prefix}$( date )"
+	cat "${notification_status_file}" | sed -e "s/^/${prefix}/g"
+	echo "${prefix}END:${ldap_dn}"
+    ) 1>&2
+
+}
+
+_notifications_reset ()
+{
+    ldap_dn="$1"
+
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
+    rm -f "${notification_status_file}"
+}
+
+_notification_state_to_none ()
+{
+    ldap_dn="$1"
+
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
+    (
+	echo "status:NONE"
+    ) > "${notification_status_file}"
+}
+
+_notification_state_to_requested ()
+{
+    ldap_dn="$1"
+    mailto="$2"
+
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
+
+    if [[ -r "${notification_status_file}" ]]
+    then
 	:
     else
-        # Skip action
-        return 0
+	touch "${notification_status_file}"
     fi
+
+    # recreate file
+    notification_status_file_new_content=$(
+	# keep all lines, exept for mail_body_file_name
+	sed -e '/^status:/d' -e '/^mailto:/d' "${notification_status_file}"
+	echo "mailto:${mailto}"
+	echo 'status:REQUESTED' )
+
+    echo "${notification_status_file_new_content}" > "${notification_status_file}"
     
+    __dump_notification_status_file "${ldap_dn}" "=====TO_REQUESTED "
+
+}
+
+_notify_once()
+{
+    ldap_dn="$1"
+    mail_body_file_name_prefix="$2"
+
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
+
+    __dump_notification_status_file "${ldap_dn}" "=====ADD ONCE "
+
+    current_status_line=$( grep --fixed-strings "${mail_body_file_name_prefix}" "${notification_status_file}" )
+
+    if [[ -z "${current_status_line}" ]]
+    then
+	echo "mail_once:${mail_body_file_name_prefix}" >> "${notification_status_file}"
+    else
+	case "${current_status_line}" in
+	    "sent_once:"*)
+	    # already sent
+		:
+		;;
+	    *)
+		# should not happen
+		echo "INTERNAL ERROR: notification status file ${notification_status_file} contains unknow status: ${current_status_line}" 1>&2
+		;;
+	esac
+    fi
+    __dump_notification_status_file "${ldap_dn}" "=====ONCE ADDED "
+}
+
+_notification_sent ()
+{
+    ldap_dn="$1"
+    mail_file_name_prefix="$2"
+
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
+    __dump_notification_status_file "${ldap_dn}" "===== BEFORE SENT "
+
+    # recreate file
+    notification_status_file_new_content=$(
+	# keep all lines, exept for mail_body_file_name
+	grep -v --fixed-strings "${mail_file_name_prefix}" "${notification_status_file}"
+	# add "sent" status for it
+	echo "sent_once:${mail_file_name_prefix}"
+					)
+    echo "${notification_status_file_new_content}" > "${notification_status_file}"
+    __dump_notification_status_file "${ldap_dn}" "===== SENT "
+}
+
+_notify_flush_requests ()
+{
+
+    ldap_dn="$1"
+
+    notification_status_file=$( _get_notification_status_file_name "${ldap_dn}")
+
     if [[ -z "${SMTP_HOST}" ]]
     then
         # Skip action
         return 0
     fi
 
-    mail_subject="[PC][ServiceBox] Votre réservation n'a pa pu être honorée"
+    if [[ -r "${notification_status_file}" ]]
+    then
+	# a status file has been generated
+	:
+    else
+	return 0
+    fi
 
-    : ${RAW_MAIL_FILE:=$( mktemp --dry-run --suffix=_raw_mail4action_notification.txt )}
+    notification_status=$(
+	cat "${notification_status_file}" | sed -n -e 's/^status://p'
+		       )
+
+    case "${notification_status}" in
+	'REQUESTED')
+	    :
+	    ;;
+	*)
+	    # nothing to do
+	    return 0
+    esac
+	
+    email_to_address=$(
+	cat "${notification_status_file}" | sed -n -e 's/^mailto://p'
+		    )
+
+
+    mail_attribute_list=$(
+	cat "${notification_status_file}" | sed -n -e 's/^mail_once://p'
+	     )
+
     : ${SMTP_PORT:=25}
 
-    (
-        echo 'Content-Type: text/html; charset="utf-8"'
-        echo 'Content-Transfer-Encoding: base64'
-        echo "From: staff@planete-citroen.com"
-        echo "To: ${email_to_address}"
-        echo "Subject: ${mail_subject}"
-        echo
-        cat "${html_body_file_name}" | base64
-    ) > "${RAW_MAIL_FILE}"
+    raw_mail_file="/tmp/notification_raw_mail_file_${ldap_dn}"
+    while IFS= read -r mail_attribute
+    do
 
-    curl --silent --show-error \
-        --mail-from 'staff@planete-citroen.com' \
-        --mail-rcpt "${email_to_address}" \
-        --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
-        --upload-file "${RAW_MAIL_FILE}"
+	if [[ -z "${mail_attribute}" ]]
+	then
+	    # limit case where an empty string is passed here
+	    continue
+	fi
 
-    # FIXME:
-    #!! rm -f "${RAW_MAIL_FILE}"
+	subject_file_name="${mail_attribute}.subject.txt"
+	html_body_file_name="${mail_attribute}.body.html"
+	
+	if [[ -r "${subject_file_name}" ]]
+	then
+	    mail_subject=$( cat "${subject_file_name}" )
+	else
+	    mail_subject='[PC][ServiceBox] Notication suite à votre réservation'
+	    echo "INFO: notification subject file \"${subject_file_name}\" not found. Using default subject"
+	fi
+
+	#!!!!!!!!!!!!!!
+	#!!!!!!email_to_address='raphael.bernhard@orange.fr'
+	
+	if [[ -r "${html_body_file_name}" ]]
+	then
+
+	    (
+		echo 'Content-Type: text/html; charset="utf-8"'
+		echo 'Content-Transfer-Encoding: base64'
+		echo "From: staff@planete-citroen.com"
+		echo "To: ${email_to_address}"
+		echo "Subject: ${mail_subject}"
+		echo
+		cat "${html_body_file_name}" | base64
+	    ) > "${raw_mail_file}"
+
+	    curl --silent --show-error \
+		 --mail-from 'staff@planete-citroen.com' \
+		 --mail-rcpt "${email_to_address}" \
+		 --mail-rcpt 'raphael.bernhard@orange.fr' \
+		 --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
+		 --upload-file "${raw_mail_file}"
+
+	    (
+		echo "INFO: mail sent to ${email_to_address} with subject: ${mail_subject}"
+	    ) 1>&2
+
+	else
+	    echo "ERROR: Could not find notification file \"${html_body_file_name}\"" 1>&2
+	fi
+
+	_notification_sent "${ldap_dn}" "${mail_attribute}"
+	
+    done <<< "${mail_attribute_list}"
+
 }
 
 
@@ -140,12 +318,8 @@ userHasCapabilities ()
 	    else
 		(
 		    echo "INFO: ${ldap_dn} is NOT member of mandatory group ${mandatory_group}"
-		    email_address_for_ldap_uid=$(
-			eval ${dsidm_cmd_to_evaluate} user get \'${uid}\' | \
-			    jq -r '.attrs.mail[]' )
-		    
-		    _notify_by_mail "${email_address_for_ldap_uid}" "${HERE}/etc/mail_body_error_for_${var_name}"
 		) 1>&2
+		_notify_once "${ldap_dn}" "${ETC_DIR}/mail_error_for_${var_val}"
 		return 1
 	    fi
 
@@ -181,14 +355,22 @@ declare -a appointed_DNs_array=()
 for ics_url in $( echo "${ics_url_list}" )
 do
 
-    vcal_data=$( getVCalData ${ics_url} )
+    raw_vcal_data=$( getVCalData ${ics_url} )
 
-    organizer_line=$(
-	echo "${vcal_data}" | grep -e '^ORGANIZER;'
-		  )
+    vcal_data=$(
+	echo "${raw_vcal_data}" | sed -e 's/\r$//'
+	     )
+
+    uid_data=$(
+	echo "${vcal_data}" | sed -n -e 's/UID://p'
+	     )
 
     organizer_data=$(
-	echo "${organizer_line}" | sed -e 's/ORGANIZER;//' -e 's/\r$//'
+	echo "${vcal_data}" | sed -n -e 's/ORGANIZER;//p'
+	     )
+
+    summary_data=$(
+	echo "${vcal_data}" | sed -n -e 's/^SUMMARY://p'
 	     )
 
     displayName=$( echo "${organizer_data}" | sed -e 's/CN=\(.*\):mailto:.*$/\1/' )
@@ -230,8 +412,60 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 
     appointed_DNs_array+=( "${dn}" )
 
+    # set notification status file
+    if grep --silent --ignore-case --fixed-strings '[S]' <<< "${summary_data}"
+    then
+	_notification_state_to_none "${dn}"
+    else
+	_notification_state_to_requested "${dn}" "${mailto}"
+    fi	
+
+    # grant access if not already granted
+
+    # check if access is already granted
+    currently_allowed_DNs=$(
+	
+	# dsidm may return line with empty DNs => remove these empty lines
+	
+	eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | \
+	    sed -n -e '/^dn: /s/^dn: //p' | \
+	    sed -e '/^[ \t]*$/d' )
+
+    if grep --silent --fixed-strings "${dn}" <<< "${currently_allowed_DNs}"
+    then
+	# already granted
+	if grep --silent --fixed-strings '**DEV**' <<< "${summary_data}"
+	then
+	    # FOR TEST ONLY
+	    :
+	else
+	    continue
+	fi
+	# NOT REACHED
+    fi
+
+    #
+    if userHasCapabilities "${dn}"
+    then
+	grantServiceBoxAccess "${dn}"
+	(
+	    echo "INFO: granted acces to DN \"${dn}\""
+	) 1>&2
+	_notify_once "${ldap_dn}" "${ETC_DIR}/mail_grant_${ALLOWING_LDAP_GROUP_NAME}"
+	appointed_DNs_array+=( "${line}" )
+    else
+	(
+	    echo "INFO: user with DN \"${dn}\" does not have the required capabilies"
+	) 1>&2
+    fi
+
+    _notify_flush_requests "${dn}"
+    
 done
 
+#
+# Only for tracing
+#
 (
     echo "INFO: currently appointed DNs"
     for dn in "${appointed_DNs_array[@]}"
@@ -240,70 +474,35 @@ done
     done
 ) 1>&2
 
-allowed_DNs_ldap_search_result=$(
+#
+# revoke all users who did not reserve and are currently allowed
+#
 
+#
+# get all allowed DNs
+#
+currently_allowed_DNs=$(
+	
     # dsidm may return line with empty DNs => remove these empty lines
-
+	
     eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | \
 	sed -n -e '/^dn: /s/^dn: //p' | \
 	sed -e '/^[ \t]*$/d' )
+
 # store result in array
-declare -a allowed_DNs_array=()
-while IFS= read -r line; do
+declare -a  allowed_DNs_array=()
+while IFS= read -r line
+do
     # skip eventual empty lines
     if [[ -n "${line}" ]]
     then
 	allowed_DNs_array+=( "${line}" )
     fi
-done <<< ${allowed_DNs_ldap_search_result}
-#
-# allow new users who reserved and are not already allowed
-#
-
-appointed_minus_allowed_DNs=$(
-    
-    for dn in "${allowed_DNs_array[@]}" "${allowed_DNs_array[@]}" "${appointed_DNs_array[@]}"
-    do
-	echo "${dn}"
-    done | \
-    sort | \
-    uniq -u
-)
-# store result in array
-declare -a  new_DNs_array=()
-while IFS= read -r line; do
-    # skip eventual empty lines
-    if [[ -n "${line}" ]]
-    then
-	new_DNs_array+=( "${line}" )
-    fi
-done <<< ${appointed_minus_allowed_DNs}
-
-
+done <<< ${currently_allowed_DNs}
 
 #
-# grant access to appointed DNs not already granted
+# get those who are allowed, but not appointed
 #
-
-for dn in "${new_DNs_array[@]}"
-do
-    if userHasCapabilities "${dn}"
-    then
-	grantServiceBoxAccess "${dn}"
-	(
-	    echo "INFO: granted acces to DN \"${dn}\""
-	) 1>&2
-    else
-	(
-	    echo "INFO: user with DN \"${dn}\" does not have the required capabilies"
-	) 1>&2
-    fi
-done
-
-#
-# revoke all users who did not reserve and are currently allowed
-#
-
 allowed_DNs_minus_appointed=$(
     
     for dn in "${appointed_DNs_array[@]}" "${appointed_DNs_array[@]}" "${allowed_DNs_array[@]}"
@@ -329,8 +528,14 @@ do
     (
 	echo "INFO: revoked acces to DN \"${dn}\""
     ) 1>&2
+    _notify_once "${ldap_dn}" "${ETC_DIR}/mail_revoke_${ALLOWING_LDAP_GROUP_NAME}"
+    _notify_flush_requests "${dn}"
+    _notifications_reset "${dn}"
 done
 
+#
+# Only for tracing
+#
 (
     echo "INFO: current members of LDAP group \"${ALLOWING_LDAP_GROUP_NAME}\""
     eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | sed -e 's/^/\t==>/'

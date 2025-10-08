@@ -37,6 +37,7 @@ services:
          DELAY: ${DELAY-20s}
       volumes:
          - ./pwdfile.txt:/etc/pwdfile.txt:ro
+         - ./etc/:/code/etc/:ro
       command:
          - bash
          - -c

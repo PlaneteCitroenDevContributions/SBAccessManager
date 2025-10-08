@@ -23,6 +23,11 @@ RUN dnf install -y \
     && \
     dnf clean all
 
+RUN dnf swap -y \
+       libcurl-minimal libcurl-full \
+    && \
+    dnf clean all
+
 RUN dnf install -y \
        jq \
     && \
@@ -45,6 +50,8 @@ ENV CALDAV_USERNAME=''
 ENV CALDAV_PASSWORD=''
 ENV SERVICE_BOX_CALENDAR_NAME=''
 ENV LDAP_URL='ldap://ldap:3389'
+ENV SMTP_HOST='mailhost'
+ENV SMTP_PORT='25'
 ENV CLOUD_AFFILIATED_LDAP_GROUP_NAME=''
 ENV INVISION_API_KEY=''
 ENV INVISION_GROUP_ID1=''

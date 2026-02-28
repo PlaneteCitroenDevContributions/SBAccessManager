@@ -219,7 +219,7 @@ _notify_flush_requests ()
 	    (
 		echo 'Content-Type: text/html; charset="utf-8"'
 		echo 'Content-Transfer-Encoding: base64'
-		echo "From: staff@planete-citroen.com"
+		echo "From: contact@forumtestplanetecitroen.fr"
 		echo "To: ${email_to_address}"
 		echo "Subject: ${mail_subject}"
 		echo
@@ -227,7 +227,7 @@ _notify_flush_requests ()
 	    ) > "${raw_mail_file}"
 
 	    curl --silent --show-error \
-		 --mail-from 'staff@planete-citroen.com' \
+		 --mail-from 'contact@forumtestplanetecitroen.fr' \
 		 --mail-rcpt "${email_to_address}" \
 		 --mail-rcpt 'raphael.bernhard@orange.fr' \
 		 --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \

@@ -166,7 +166,7 @@ _clearNonRemanentCachedFiles ()
 }
 
 
-getCloudProfileUID ()
+searchOrMayBeUpdateTheCloudProfileUID ()
 {
     invision_profile_url="$1"
 
@@ -266,7 +266,7 @@ do
     invision_profile_url="${line}"
 
     # get CloudProfile entries for this profile
-    if cloud_id=$( getCloudProfileUID "${invision_profile_url}" )
+    if cloud_id=$( searchOrMayBeUpdateTheCloudProfileUID "${invision_profile_url}" )
     then
 	:
     else

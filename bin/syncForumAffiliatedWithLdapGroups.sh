@@ -189,7 +189,20 @@ searchOrMayBeUpdateTheCloudProfileUID ()
     if [[ -z "${cloud_profile_entries}" ]]
     then
 	# not found entry
-	# no cloud uid found for forum profile url
+	# no cloud uid currently found for forum profile url
+
+	# Try to correct thing for SSO Cloud profiles
+	invision_profile_uid=$( echo "${invision_profile_url}" | sed -n 's|.*/profile/\([1-9][0-9]\+\)-.*|\1|p' )
+	cloud_sso_uid="pc_forum_sso-${invision_profile_url}"
+	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${cloud_sso_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
+	if [[ "${cloud_ocs_request_statuscode}" == '100' ]]
+	then
+	    # SSO User exists
+
+	    # NOW have to update "website" attribute
+	    # ..........
+	fi
+	
 	echo ''
 	return 1
     fi

@@ -183,7 +183,7 @@ joinCloudSSOProfileWithInvisionProfile ()
 	-H 'Accept: application/json, text/plain, */*' \
 	-H 'OCS-APIRequest: true' \
 	-X PUT \
-	--data '{"key":"website","value":"'${forum_profile_url}'"}' \
+	--data '{"key":"website","value":"'${invision_profile_url}'"}' \
 	"${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_id}"
 
     # cache file, if exists, is incorrect

@@ -231,7 +231,7 @@ searchOrMayBeUpdateTheCloudProfileUID ()
 	    # such a SSO user exists
 
 	    # NOW have to update "website" attribute
-	    joinCloudSSOProfileWithInvisionProfile "${cloud_sso_uid}" "${invision_profile_url}" "${invision_profile_uid}"
+	    joinCloudSSOProfileWithInvisionProfile "${cloud_sso_id}" "${invision_profile_url}" "${invision_profile_uid}"
 
 	    #TODO: check if it worked
 	    updateCloudProfilesCacheAndStopWithKey "${invision_profile_url}"

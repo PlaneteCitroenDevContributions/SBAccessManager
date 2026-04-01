@@ -226,7 +226,7 @@ searchOrMayBeUpdateTheCloudProfileUID ()
 	cloud_sso_id="pc_forum_sso-${invision_profile_uid}"
 	# search for seach a user
 	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_sso_id}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
-	if [[ "${cloud_ocs_request_statuscode}" == '100' ]]
+	if [[ "${cloud_ocs_request_statuscode}" == '200' ]]
 	then
 	    # such a SSO user exists
 

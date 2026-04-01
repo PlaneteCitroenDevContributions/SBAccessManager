@@ -113,6 +113,27 @@ updateCloudProfilesCacheAndStopWithKey ()
 
 }
 
+joinCloudSSOProfileWithInvisionProfile ()
+{
+    # WARNING!
+    #
+    # we assume the this profile has been created by SSO => it has the form "pc_forum_sso-<invision_profile_UID>"
+
+    cloud_id="$1"
+    invision_profile_url="$2"
+    invision_profile_uid="$3"
+
+    ${CURL} \
+	-s \
+	-u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" \
+	-H 'Content-Type: application/json' \
+	-H 'Accept: application/json, text/plain, */*' \
+	-H 'OCS-APIRequest: true' \
+	-X PUT \
+	--data '{"key":"website","value":"'${forum_profile_url}'"}' \
+	"${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_sso_id}"'
+}
+
 clearCloudProfileCacheForCloudUID ()
 {
     cloud_uid="$1"
@@ -193,14 +214,15 @@ searchOrMayBeUpdateTheCloudProfileUID ()
 
 	# Try to correct thing for SSO Cloud profiles
 	invision_profile_uid=$( echo "${invision_profile_url}" | sed -n 's|.*/profile/\([1-9][0-9]\+\)-.*|\1|p' )
-	cloud_sso_uid="pc_forum_sso-${invision_profile_url}"
-	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${cloud_sso_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
+	cloud_sso_id="pc_forum_sso-${invision_profile_uid}"
+	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${cloud_sso_id}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
 	if [[ "${cloud_ocs_request_statuscode}" == '100' ]]
 	then
 	    # SSO User exists
 
 	    # NOW have to update "website" attribute
 	    # ..........
+	    joinCloudSSOProfileWithInvisionProfile "${cloud_sso_uid}" "${invision_profile_url}" "${invision_profile_uid}"
 	fi
 	
 	echo ''

@@ -98,7 +98,7 @@ updateCloudProfilesCacheAndStopWithKey ()
 
 	    url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
 
-	    ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.' > "${cloud_profile_cache_file_name}"
+	    ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.' > "${cloud_profile_cache_file_name}"
 	fi
 
 	if [[ -n "${key_to_search_for}" ]]
@@ -111,27 +111,6 @@ updateCloudProfilesCacheAndStopWithKey ()
 
     done < "${_cache_dir}/cloudNonAffiliatedMembersWithSbAccess.txt"
 
-}
-
-joinCloudSSOProfileWithInvisionProfile ()
-{
-    # WARNING!
-    #
-    # we assume the this profile has been created by SSO => it has the form "pc_forum_sso-<invision_profile_UID>"
-
-    cloud_id="$1"
-    invision_profile_url="$2"
-    invision_profile_uid="$3"
-
-    ${CURL} \
-	-s \
-	-u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" \
-	-H 'Content-Type: application/json' \
-	-H 'Accept: application/json, text/plain, */*' \
-	-H 'OCS-APIRequest: true' \
-	-X PUT \
-	--data '{"key":"website","value":"'${forum_profile_url}'"}' \
-	"${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_sso_id}"'
 }
 
 clearCloudProfileCacheForCloudUID ()
@@ -187,10 +166,37 @@ _clearNonRemanentCachedFiles ()
 }
 
 
+joinCloudSSOProfileWithInvisionProfile ()
+{
+    # WARNING!
+    #
+    # we assume the this profile has been created by SSO => it has the form "pc_forum_sso-<invision_profile_UID>"
+
+    cloud_id="$1"
+    invision_profile_url="$2"
+    invision_profile_uid="$3"
+
+    ${CURL} \
+	-s \
+	-u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" \
+	-H 'Content-Type: application/json' \
+	-H 'Accept: application/json, text/plain, */*' \
+	-H 'OCS-APIRequest: true' \
+	-X PUT \
+	--data '{"key":"website","value":"'${forum_profile_url}'"}' \
+	"${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_id}"
+
+    # cache file, if exists, is incorrect
+    clearCloudProfileCacheForCloudUID "${cloud_id}"
+
+}
+
 searchOrMayBeUpdateTheCloudProfileUID ()
 {
     invision_profile_url="$1"
 
+    cloud_profile_entries=''
+    
     # search in cached profiles once
     cloud_profile_entries=$(
 	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cache_dir}/cloud_profile_"*.json
@@ -209,30 +215,41 @@ searchOrMayBeUpdateTheCloudProfileUID ()
 
     if [[ -z "${cloud_profile_entries}" ]]
     then
-	# not found entry
-	# no cloud uid currently found for forum profile url
+	# searched entry not found
+	# => no Cloud user has Invision profile url as attribute
 
-	# Try to correct thing for SSO Cloud profiles
+	# Try to correct behind the scene for SSO Cloud profiles
+
+	# if a SSO user exists, it has the form "pc_forum_sso-<Invision UID>"
+
 	invision_profile_uid=$( echo "${invision_profile_url}" | sed -n 's|.*/profile/\([1-9][0-9]\+\)-.*|\1|p' )
 	cloud_sso_id="pc_forum_sso-${invision_profile_uid}"
-	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v1.php/cloud/users/'"${cloud_sso_id}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
+	# search for seach a user
+	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_sso_id}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
 	if [[ "${cloud_ocs_request_statuscode}" == '100' ]]
 	then
-	    # SSO User exists
+	    # such a SSO user exists
 
 	    # NOW have to update "website" attribute
-	    # ..........
 	    joinCloudSSOProfileWithInvisionProfile "${cloud_sso_uid}" "${invision_profile_url}" "${invision_profile_uid}"
+
+	    #TODO: check if it worked
+	    updateCloudProfilesCacheAndStopWithKey "${invision_profile_url}"
+	    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_uid}".json
+	    cloud_profile_entries=${cloud_profile_cache_file_name}
 	fi
-	
-	echo ''
-	return 1
     fi
 
     # FIXME: we suppose that a single file name is returned
-    cloud_id=$( cat "${cloud_profile_entries}" | jq -r '.ocs.data.id' )
-    echo "${cloud_id}"
-    return 0
+    if [[ -z "${cloud_profile_entries}" ]]
+    then
+	echo ''
+	return 1
+    else
+	cloud_id=$( cat "${cloud_profile_entries}" | jq -r '.ocs.data.id' )
+	echo "${cloud_id}"
+	return 0
+    fi
 }
 
 # Get all forum members which are member of the required groups

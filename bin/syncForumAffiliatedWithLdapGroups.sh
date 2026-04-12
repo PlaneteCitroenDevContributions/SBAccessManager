@@ -223,12 +223,13 @@ searchOrMayBeUpdateTheCloudProfileUID ()
 	# if a SSO user exists, it has the form "pc_forum_sso-<Invision UID>"
 
 	invision_profile_uid=$( echo "${invision_profile_url}" | sed -n 's|.*/profile/\([1-9][0-9]\+\)-.*|\1|p' )
-	cloud_sso_id="pc_forum_sso-${invision_profile_uid}"
+	cloud_sso_id_to_search_for="pc_forum_sso-${invision_profile_uid}"
 	# search for seach a user
-	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_sso_id}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
+	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_sso_id_to_search_for}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
 	if [[ "${cloud_ocs_request_statuscode}" == '200' ]]
 	then
 	    # such a SSO user exists
+	    cloud_sso_id=${cloud_sso_id_to_search_for}
 
 	    # NOW have to update "website" attribute
 	    joinCloudSSOProfileWithInvisionProfile "${cloud_sso_id}" "${invision_profile_url}" "${invision_profile_uid}"

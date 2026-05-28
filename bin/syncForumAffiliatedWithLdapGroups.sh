@@ -86,6 +86,8 @@ updateCloudProfilesCacheAndStopWithKey ()
     while read cloud_uid
     do
 
+	echo "1====: echo ==${cloud_uid}==" 1>&2
+	
 	#FIXEME:
 	# we noticed in logs that sometime cloud_uid is empty. Why??
 	# catch and ignore this case
@@ -97,6 +99,7 @@ updateCloudProfilesCacheAndStopWithKey ()
 	fi
 
 	cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+	echo "2====: echo ==${cloud_uid}==" 1>&2
 
 	if [[ -r "${cloud_profile_cache_file_name}" ]]
 	then
@@ -113,7 +116,7 @@ updateCloudProfilesCacheAndStopWithKey ()
 
 	if [[ -n "${key_to_search_for}" ]]
 	then
-	    if grep --fixed-strings "${key_to_search_for}" "${cloud_profile_cache_file_name}"
+	    if grep -q --fixed-strings "${key_to_search_for}" "${cloud_profile_cache_file_name}"
 	    then
 		break
 	    fi

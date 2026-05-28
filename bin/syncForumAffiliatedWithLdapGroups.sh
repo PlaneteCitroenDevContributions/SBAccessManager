@@ -86,6 +86,16 @@ updateCloudProfilesCacheAndStopWithKey ()
     while read cloud_uid
     do
 
+	#FIXEME:
+	# we noticed in logs that sometime cloud_uid is empty. Why??
+	# catch and ignore this case
+	if [[ -z "${cloud_uid}" ]]
+	then
+	    echo "INFO: we got and empty cloud_uid. Ignore it" 1>&2
+	    continue
+	    # NOT REACHED
+	fi
+
 	cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
 
 	if [[ -r "${cloud_profile_cache_file_name}" ]]

@@ -78,6 +78,18 @@ getCloudNonAffiliatedMembersWithSbAccess ()
 
     sed -n -e 's/^uid:[ \t]*//p' <<< "${non_affiliated_users_with_sb_access}"
 }
+
+getDataForValidCloudId ()
+{
+    # FIXME:
+    # this function assumes that cloud_uid is a valid and existing Cloud id
+    cloud_uid="$1"
+
+    url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
+    
+    ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.'
+}
+
 updateCloudProfilesCacheAndStopWithKey ()
 {
 
@@ -88,7 +100,7 @@ updateCloudProfilesCacheAndStopWithKey ()
 
 	echo "1====: echo ==${cloud_uid}==" 1>&2
 	
-	#FIXEME:
+	# FIXME:
 	# we noticed in logs that sometime cloud_uid is empty. Why??
 	# catch and ignore this case
 	if [[ -z "${cloud_uid}" ]]
@@ -106,12 +118,8 @@ updateCloudProfilesCacheAndStopWithKey ()
 	    # we already donwloaded the data
 	    echo "DEBUG: use cache files ${cloud_profile_cache_file_name}" 1>&2
 	else
-
 	    echo "DEBUG: rebuild cache files ${cloud_profile_cache_file_name}" 1>&2
-
-	    url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
-
-	    ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.' > "${cloud_profile_cache_file_name}"
+	    getDataForValidCloudId "${cloud_uid}"  > "${cloud_profile_cache_file_name}"
 	fi
 
 	if [[ -n "${key_to_search_for}" ]]
@@ -128,12 +136,12 @@ updateCloudProfilesCacheAndStopWithKey ()
 
 clearCloudProfileCacheForCloudUID ()
 {
-    cloud_uid="$1"
+    cloud_id="$1"
 
-    if [[ -r "${_cache_dir}"/cloud_profile_"${cloud_uid}".json ]]
+    if [[ -r "${_cache_dir}"/cloud_profile_"${cloud_id}".json ]]
     then
        # in some cases (DEBUG mode), this file may not have been generated
-       mv -f  "${_cache_dir}"/cloud_profile_"${cloud_uid}".json "${_previous_run_cache_dir}"
+       mv -f "${_cache_dir}"/cloud_profile_"${cloud_id}".json "${_previous_run_cache_dir}"
     fi
 }
 
@@ -210,18 +218,9 @@ searchOrMayBeUpdateTheCloudProfileUID ()
 
     cloud_profile_entries=''
     
-    # search in cached profiles once
-    cloud_profile_entries=$(
-	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cache_dir}/cloud_profile_"*.json
-			 )
-    if [[ -z "${cloud_profile_entries}" ]]
-    then
-	# not found entry
-	# update the cache and try again
-	updateCloudProfilesCacheAndStopWithKey "${invision_profile_url}"
-    fi
+    # First update caches
+    updateCloudProfilesCacheAndStopWithKey "${invision_profile_url}"
 
-    # search a second time, after cache update
     cloud_profile_entries=$(
 	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cache_dir}/cloud_profile_"*.json
 			 )
@@ -229,27 +228,34 @@ searchOrMayBeUpdateTheCloudProfileUID ()
     if [[ -z "${cloud_profile_entries}" ]]
     then
 	# searched entry not found
-	# => no Cloud user has Invision profile url as attribute
+	# => no Cloud user has ${invision_profile_url} url as attribute
 
+	#
+	# SSO special case
+	# ================
+	#
 	# Try to correct behind the scene for SSO Cloud profiles
 
 	# if a SSO user exists, it has the form "pc_forum_sso-<Invision UID>"
 
 	invision_profile_uid=$( echo "${invision_profile_url}" | sed -n 's|.*/profile/\([1-9][0-9]\+\)-.*|\1|p' )
 	cloud_sso_id_to_search_for="pc_forum_sso-${invision_profile_uid}"
-	# search for seach a user
+	
+	# search for seach a user with UID ${cloud_sso_id_to_search_for}
 	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_sso_id_to_search_for}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
 	if [[ "${cloud_ocs_request_statuscode}" == '200' ]]
 	then
-	    # such a SSO user exists
+	    # The searched SSO user exists
 	    cloud_sso_id=${cloud_sso_id_to_search_for}
 
 	    # NOW have to update "website" attribute
 	    joinCloudSSOProfileWithInvisionProfile "${cloud_sso_id}" "${invision_profile_url}" "${invision_profile_uid}"
 
-	    #TODO: check if it worked
-	    updateCloudProfilesCacheAndStopWithKey "${invision_profile_url}"
-	    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_uid}".json
+	    # update cache file
+	    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_id}".json
+	    getDataForValidCloudId "${cloud_sso_id}" > "${cloud_profile_cache_file_name}"
+
+	    # this is the file we searched for
 	    cloud_profile_entries=${cloud_profile_cache_file_name}
 	fi
     fi

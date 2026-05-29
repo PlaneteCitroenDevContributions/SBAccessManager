@@ -197,15 +197,17 @@ joinCloudSSOProfileWithInvisionProfile ()
     invision_profile_url="$2"
     invision_profile_uid="$3"
 
-    ${CURL} \
-	-s \
-	-u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" \
-	-H 'Content-Type: application/json' \
-	-H 'Accept: application/json, text/plain, */*' \
-	-H 'OCS-APIRequest: true' \
-	-X PUT \
-	--data '{"key":"website","value":"'${invision_profile_url}'"}' \
-	"${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_id}"
+    _curlResult=$(
+	${CURL} \
+	    -s \
+	    -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" \
+	    -H 'Content-Type: application/json' \
+	    -H 'Accept: application/json, text/plain, */*' \
+	    -H 'OCS-APIRequest: true' \
+	    -X PUT \
+	    --data '{"key":"website","value":"'${invision_profile_url}'"}' \
+	    "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_id}"
+	)
 
     # cache file, if exists, is incorrect
     clearCloudProfileCacheForCloudUID "${cloud_id}"

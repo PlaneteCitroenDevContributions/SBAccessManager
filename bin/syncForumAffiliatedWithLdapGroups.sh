@@ -87,7 +87,8 @@ getDataForValidCloudId ()
 
     url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
     
-    ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.'
+    _json_decode_curl_out=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.' )
+    echo "${_json_decode_curl_out}"
 }
 
 updateCloudProfilesCacheAndStopWithKey ()
@@ -307,7 +308,7 @@ ${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInReque
 #
 # Extract Invision profile URL for all found members
 
-jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInRequestedGroups.json" > "${_cache_dir}/forumMembersWithSbAccess.txt"
+jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInRequestedGroups.json" > "${_cache_dir}/forumProfileURLsWithSbAccess.txt"
 
 #
 #FIXME: the Forum profile URL store in the Website attribute must match exactly the URL of the Forum profile
@@ -316,7 +317,7 @@ jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInRequestedGroups.json"
 
 if [[ -n "${TEST_CONTENT4_forumProfiles}" ]]
 then
-    echo "${TEST_CONTENT4_forumProfiles}" > "${_cache_dir}/forumMembersWithSbAccess.txt"
+    echo "${TEST_CONTENT4_forumProfiles}" > "${_cache_dir}/forumProfileURLsWithSbAccess.txt"
 fi
 
 #
@@ -378,7 +379,7 @@ do
 	clearCloudProfileCacheForCloudUID "${cloud_id}"
     fi
 
-done < "${_cache_dir}/forumMembersWithSbAccess.txt"
+done < "${_cache_dir}/forumProfileURLsWithSbAccess.txt"
 
 _clearNonRemanentCachedFiles
 

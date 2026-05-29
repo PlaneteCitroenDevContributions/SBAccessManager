@@ -349,7 +349,13 @@ do
 	# ldap search result OK
 	:
     else
-	echo "INTERNAL ERROR: Could not file \"${cloud_id}\" in ldap" 1>&2
+	echo "INTERNAL ERROR: Could not find \"${cloud_id}\" in ldap while searching for Invision porfile ${invision_profile_url}" 1>&2
+	echo "	Ldap search result: ${dn_search_result}" 1>&2
+
+	# May be the user does not exist anymore
+	# remove cached information about this user
+	clearCloudProfileCacheForCloudUID "${cloud_id}"
+
 	continue
 	# NOT REACHED
     fi

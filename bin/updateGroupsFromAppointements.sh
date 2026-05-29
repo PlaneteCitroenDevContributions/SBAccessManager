@@ -286,9 +286,8 @@ userHasCapabilities ()
 	USER_MUST_BE_MEMBER_OF_LDAP_GROUP2
 	USER_MUST_BE_MEMBER_OF_LDAP_GROUP3"
 
-    uid=$( eval ${dsidm_cmd_to_evaluate} user get_dn \'${ldap_dn}\' )
     current_group_dns_for_ldap_dn=$(
-	eval ${dsidm_cmd_to_evaluate} user get \'${uid}\' | \
+	eval ${dsidm_cmd_to_evaluate} user get_dn \'${ldap_dn}\' | \
 	    jq -r '.attrs.memberof[]'
 			      )
 
@@ -297,9 +296,7 @@ userHasCapabilities ()
 	do
 	    eval ${dsidm_cmd_to_evaluate} group get_dn \'${group_dn}\'
 	done
-	)
-	
-
+				 )
     for var_name in ${var_names_holding_mandatory_ldap_group_names}
     do
 	#test if var is set

@@ -302,12 +302,12 @@ getCloudNonAffiliatedMembersWithSbAccess > "${_cache_dir}/cloudNonAffiliatedMemb
 # get all Forum affiliated members
 #FIXME: perPage should be a param
 
-${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersWithAccess.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
+${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInRequestedGroups.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
 
 #
 # Extract Invision profile URL for all found members
 
-jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersWithAccess.json" > "${_cache_dir}/forumProfiles.txt"
+jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInRequestedGroups.json" > "${_cache_dir}/forumMembersWithSbAccess.txt"
 
 #
 #FIXME: the Forum profile URL store in the Website attribute must match exactly the URL of the Forum profile
@@ -316,7 +316,7 @@ jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersWithAccess.json" > "${_
 
 if [[ -n "${TEST_CONTENT4_forumProfiles}" ]]
 then
-    echo "${TEST_CONTENT4_forumProfiles}" > "${_cache_dir}/forumProfiles.txt"
+    echo "${TEST_CONTENT4_forumProfiles}" > "${_cache_dir}/forumMembersWithSbAccess.txt"
 fi
 
 #
@@ -378,7 +378,7 @@ do
 	clearCloudProfileCacheForCloudUID "${cloud_id}"
     fi
 
-done < "${_cache_dir}/forumProfiles.txt"
+done < "${_cache_dir}/forumMembersWithSbAccess.txt"
 
 _clearNonRemanentCachedFiles
 

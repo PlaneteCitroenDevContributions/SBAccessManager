@@ -425,8 +425,8 @@ Strings \"${lowercase_mailto}\" and \"${lowercase_ldap_mail}\" dos not match" 1>
 	# dsidm may return line with empty DNs => remove these empty lines
 	
 	eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | \
-	    sed -n -e '/^dn: /s/^dn: //p' | \
-	    sed -e '/^[ \t]*$/d' )
+	    jq -r '.members[]'
+	)
 
     if grep --silent --fixed-strings "${dn}" <<< "${currently_allowed_DNs}"
     then
@@ -483,8 +483,8 @@ currently_allowed_DNs=$(
     # dsidm may return line with empty DNs => remove these empty lines
 	
     eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | \
-	sed -n -e '/^dn: /s/^dn: //p' | \
-	sed -e '/^[ \t]*$/d' )
+	jq -r '.members[]'
+		     )
 
 # store result in array
 declare -a  allowed_DNs_array=()
@@ -535,5 +535,5 @@ done
 #
 (
     echo "INFO: current members of LDAP group \"${ALLOWING_LDAP_GROUP_NAME}\""
-    eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | sed -e 's/^/\t==>/'
+    eval ${dsidm_cmd_to_evaluate} group members \'${ALLOWING_LDAP_GROUP_NAME}\' | jq -r '.members[]'
 ) 1>&2

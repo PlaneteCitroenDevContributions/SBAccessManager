@@ -61,7 +61,7 @@ services:
           required: true
         
       environment:
-         DELAY: ${DELAY-4h}
+         DELAY: 1h
       volumes:
          - ./pwdfile.txt:/etc/pwdfile.txt:ro
          - ./_vols_/cache/:/var/cache4sync/:rw

@@ -144,6 +144,8 @@ _notification_sent ()
     __dump_notification_status_file "${ldap_dn}" "===== SENT "
 }
 
+: ${NOTIFICATION_SENDER_EMAIL_ADDRESS:=raphael.bernhard@orange.fr}
+: ${NOTIFICATION_CC_1:=raphael.bernhard@orange.fr}
 _notify_flush_requests ()
 {
 
@@ -219,7 +221,7 @@ _notify_flush_requests ()
 	    (
 		echo 'Content-Type: text/html; charset="utf-8"'
 		echo 'Content-Transfer-Encoding: base64'
-		echo "From: contact@forumtestplanetecitroen.fr"
+		echo "From: ${NOTIFICATION_SENDER_EMAIL_ADDRESS}"
 		echo "To: ${email_to_address}"
 		echo "Subject: ${mail_subject}"
 		echo
@@ -227,9 +229,9 @@ _notify_flush_requests ()
 	    ) > "${raw_mail_file}"
 
 	    curl --silent --show-error \
-		 --mail-from 'contact@forumtestplanetecitroen.fr' \
+		 --mail-from "${NOTIFICATION_SENDER_EMAIL_ADDRESS}" \
 		 --mail-rcpt "${email_to_address}" \
-		 --mail-rcpt 'raphael.bernhard@orange.fr' \
+		 --mail-rcpt "${NOTIFICATION_CC_1}" \
 		 --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
 		 --upload-file "${raw_mail_file}"
 

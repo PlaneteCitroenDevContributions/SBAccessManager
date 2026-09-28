@@ -361,8 +361,6 @@ do
     
 done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_wihCorrespondingForumProfile.txt"
 
-exit 1
-
 #
 #
 
@@ -376,11 +374,29 @@ exit 1
 #
 # get current member list of cloud group
 #
-getCloudNonCloudMembersWithSbAccess > "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt"
-
-
-
 getCurrentListOfUidsInCloudGroupToSync > "${_cache_dir}/cloudUidsInGroupToSync.txt"
+
+while read cloud_uid
+do
+    dummy=$( searchOrMayBeUpdateTheCloudProfileUID "${cloud_uid}" )
+
+    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+    website_cloud_profile_attribute=$( jq -r '.ocs.data.website' "${cloud_profile_cache_file_name}" 2>/dev/null )
+    if [[ -z "${website_cloud_profile_attribute}" ]]
+    then
+	# the attribute has not be set for this Cloud uid
+	# skip this uid
+	:
+    else
+	# keep this uid for further computation
+	echo "${cloud_uid};${website_cloud_profile_attribute}"
+    fi
+    
+done < "${_cache_dir}/cloudUidsInGroupToSync.txt" > "${_cache_dir}/cloudUidsInGroupToSync_wihCorrespondingForumProfile.txt"
+
+exit 1
+
+========================================
 
 while read line
 do

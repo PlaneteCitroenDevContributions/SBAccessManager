@@ -91,6 +91,14 @@ updateCloudProfilesCacheAndStopWithKey ()
 {
 
     key_to_search_for="$1"
+    filename_with_cloud_uid_list="$2"
+
+    if [[ -z "${filename_with_cloud_uid_list}" ]]
+    then
+	# to keep old code working
+	# FIXME: this should be removed
+	filename_with_cloud_uid_list="${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt"
+    fi
 
     while read cloud_uid
     do
@@ -124,7 +132,7 @@ updateCloudProfilesCacheAndStopWithKey ()
 	    fi
 	fi
 
-    done < "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt"
+    done < "${filename_with_cloud_uid_list}"
 
 }
 
@@ -307,6 +315,15 @@ done > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCo
 #
 # Cloud side data
 #
+
+# since we must process all cloud uids, first fetch and uddate cache for all cloud uids
+${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users?format=json' -H "OCS-APIRequest: true" \
+    | jq -r '.ocs.data.users[]' > "${_cache_dir}/cloudAllUIDs.txt"
+# update cache for all uids
+while read cloud_uid
+do
+    updateCloudProfilesCacheAndStopWithKey "${cloud_uid}" "${_cache_dir}/cloudAllUIDs.txt"
+done
 
 getCurrentListOfUidsInCloudGroupToSync > "${_cache_dir}/cloudUIDsOfMembersInCloudGroup_${CLOUD_LDAP_GROUP_NAME_TO_SYNC}.txt"
 

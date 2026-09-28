@@ -97,7 +97,7 @@ updateCloudProfilesCacheAndStopWithKey ()
     then
 	# to keep old code working
 	# FIXME: this should be removed
-	filename_with_cloud_uid_list="${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt"
+	filename_with_cloud_uid_list="${_cache_dir}/cloudAllUIDs.txt"
     fi
 
     while read cloud_uid
@@ -159,6 +159,7 @@ _initCache ()
     fi
 
     # remove possible files from a previous run
+    # FIXME: these files are not relevant in this script
     mv -f "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt" "${_previous_run_cache_dir}"
     mv -f "${_cache_dir}/forumMembersWithAccess.json" "${_previous_run_cache_dir}"
 }
@@ -287,6 +288,10 @@ _group_url_arg="group[]=${INVISION_GROUP_ID1}"
 _initCache
 
 #
+# initial files setup
+
+
+#
 # Invision side data
 #
 
@@ -296,11 +301,21 @@ _initCache
 ${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInGroup_${INVISION_GROUP_ID1}.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
 
 #
+# Cloud side
+#
+
+# since we must process all cloud uids, first fetch and uddate cache for all cloud uids
+${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users?format=json' -H "OCS-APIRequest: true" \
+    | jq -r '.ocs.data.users[]' > "${_cache_dir}/cloudAllUIDs.txt"
+
+#
 # Extract Invision profile URL for all found members
+# --------------------------------------------------
+#
 
 jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInGroup_${INVISION_GROUP_ID1}.json" > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}.txt"
 
-for read invision_profile_url
+while read invision_profile_url
 do
     cloud_uid=$( searchOrMayBeUpdateTheCloudProfileUID "${invision_profile_url}" )
 
@@ -310,15 +325,17 @@ do
 	:
     else
 	echo "${cloud_uid};${invision_profile_url}"
-done > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt"
+    fi
+done \
+    < "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}.txt" \
+    > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt"
+
+exit 1
     
 #
 # Cloud side data
 #
 
-# since we must process all cloud uids, first fetch and uddate cache for all cloud uids
-${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users?format=json' -H "OCS-APIRequest: true" \
-    | jq -r '.ocs.data.users[]' > "${_cache_dir}/cloudAllUIDs.txt"
 # update cache for all uids
 while read cloud_uid
 do

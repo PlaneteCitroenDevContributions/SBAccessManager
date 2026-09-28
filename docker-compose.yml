@@ -75,7 +75,7 @@ services:
 
    sync_forum_groups_with_ldap_cloud_groups:
       build: .
-      restart: unless-stopped
+#!!!!      restart: unless-stopped
       env_file:
         - path: ./global_config.env
           required: false
@@ -90,7 +90,7 @@ services:
       command:
          - bash
          - -c
-         - '/code/bin/syncForumGroupWithLdapGroup.sh 9 "AnyForumGroup"; exit 1'
+         - '/code/bin/syncForumGroupWithLdapGroup.sh "21" "InvisionGid21"; exit 1'
 #!!!!         - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/syncForumAffiliatedWithLdapGroups.sh; echo "INFO: $$( date ) ========== Next check in $${DELAY} ==========" 1>&2; sleep $${DELAY}; done'
       networks:
          - internal_services

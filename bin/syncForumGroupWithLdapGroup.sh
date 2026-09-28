@@ -278,7 +278,9 @@ _group_url_arg="group[]=${INVISION_GROUP_ID1}"
 
 _initCache
 
-getCloudNonCloudMembersWithSbAccess > "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt"
+#
+# Invision side data
+#
 
 # get all Forum members belonging to INVISION_GROUP_ID1
 #FIXME: perPage should be a param
@@ -288,7 +290,51 @@ ${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInGroup
 #
 # Extract Invision profile URL for all found members
 
-jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInGroup_${INVISION_GROUP_ID1}.json" > "${_cache_dir}/URLsOfForumMembersProfileInGroup_${INVISION_GROUP_ID1}.txt"
+jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInGroup_${INVISION_GROUP_ID1}.json" > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}.txt"
+
+for read invision_profile_url
+do
+    cloud_uid=$( searchOrMayBeUpdateTheCloudProfileUID "${invision_profile_url}" )
+
+    if [[ -z "${cloud_uid}" ]]
+    then
+	# not corresponding cloud_uid found => unable to handle
+	:
+    else
+	echo "${cloud_uid};${invision_profile_url}"
+done > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt"
+    
+#
+# Cloud side data
+#
+
+getCurrentListOfUidsInCloudGroupToSync > "${_cache_dir}/cloudUIDsOfMembersInCloudGroup_${CLOUD_LDAP_GROUP_NAME_TO_SYNC}.txt"
+
+# get correspondig Forum URL registered as Website Cloud profile attribute
+while read cloud_uid
+do
+    searchOrMayBeUpdateTheCloudProfileUID "${cloud_uid}"
+
+    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+    website_cloud_profile_attribute=$( jq -r '.ocs.data.website' "${cloud_profile_cache_file_name}" 2>/dev/null )
+    if [[ -z "${website_cloud_profile_attribute}" ]]
+    then
+	# the attribute has not be set for this Cloud uid
+	# skip this uid
+	:
+    else
+	# keep this uid for further computation
+	echo "${cloud_uid};${website_cloud_profile_attribute}"
+    fi
+    
+done < "${_cache_dir}/cloudUIDsOfMembersInCloudGroup_${CLOUD_LDAP_GROUP_NAME_TO_SYNC}.txt" > "${_cache_dir}/cloudUidsInGroup_${CLOUD_LDAP_GROUP_NAME_TO_SYNC}_wihCorrespondingForumProfile.txt"
+
+#
+#
+
+exit 1
+
+# remove from this list uids without matching Forum profile information (Website attribute)
 
 #
 #FIXME: the Forum profile URL store in the Website attribute must match exactly the URL of the Forum profile
@@ -298,6 +344,10 @@ jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInGroup_${INVISION_GROU
 #
 # get current member list of cloud group
 #
+getCloudNonCloudMembersWithSbAccess > "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt"
+
+
+
 getCurrentListOfUidsInCloudGroupToSync > "${_cache_dir}/cloudUidsInGroupToSync.txt"
 
 while read line

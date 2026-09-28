@@ -28,8 +28,26 @@ export LANG='en_US.utf8'
 
 env
 
+Usage ()
+{
+    echo "Usage: ..." 1>&2
+}
 
-: ${CLOUD_LDAP_GROUP_NAME_TO_SYNC:='_NOT_INITILIZED_'}
+
+INVISION_GROUP_ID1="$1"
+CLOUD_LDAP_GROUP_NAME_TO_SYNC="$2"
+
+if [[ -z "${INVISION_GROUP_ID1}" ]]
+then
+    Usage
+    exit 1
+fi
+
+if [[ -z "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}" ]]
+then
+    Usage
+    exit 1
+fi
 
 if [[ -z "${CURL_EXTRA_ARGs}" ]]
 then
@@ -46,7 +64,7 @@ addUidToCloudGroup ()
     
 }
 
-getCurrentListOfUidsInCloudGroup ()
+getCurrentListOfUidsInCloudGroupToSync ()
 {
 
     cloud_uids=$( ${ldapsearch_cmd} \
@@ -55,28 +73,6 @@ getCurrentListOfUidsInCloudGroup ()
 
     sed -n -e 's/^uid:[ \t]*//p' <<< "${cloud_uids}"
 
-}
-
-revokeServiceBoxAccess ()
-{
-    uid="$1"
-
-    eval ${dsidm_cmd_to_evaluate} group remove_member \'${ALLOWING_LDAP_GROUP_NAME}\'  \'${uid}\'
-}
-
-getCloudNonCloudMembersWithSbAccess ()
-{
-    # get the list of Cloud (from LDAP) user who
-    # - have access to SB
-    # - are not already cloud
-
-    # FIXME: the ldap filter should be a var
-
-    non_cloud_users_with_sb_access=$( ${ldapsearch_cmd} \
-					       '(&(|(memberOf=cn=utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)(memberOf=cn=utilisateur-serviceboxplus,ou=groups,dc=planetecitroen,dc=fr))(!(memberOf=cn='${CLOUD_LDAP_GROUP_NAME_TO_SYNC}',ou=groups,dc=planetecitroen,dc=fr)))' \
-					       uid)
-
-    sed -n -e 's/^uid:[ \t]*//p' <<< "${non_cloud_users_with_sb_access}"
 }
 
 getDataForValidCloudId ()
@@ -274,23 +270,7 @@ searchOrMayBeUpdateTheCloudProfileUID ()
 
 # Get all forum members which are member of the required groups
 
-if [[ -z "${INVISION_GROUP_ID1}" ]]
-then
-    echo "ERROR: INVISION_GROUP_ID1 not set" 1>&2
-    exit 1
-fi
-
 _group_url_arg="group[]=${INVISION_GROUP_ID1}"
-
-if [[ -n "${INVISION_GROUP_ID2}" ]]
-then
-    _group_url_arg+="&group[]=${INVISION_GROUP_ID2}"
-fi
-
-if [[ -n "${INVISION_GROUP_ID3}" ]]
-then
-    _group_url_arg+="&group[]=${INVISION_GROUP_ID3}"
-fi
 
 #
 # Main
@@ -300,30 +280,25 @@ _initCache
 
 getCloudNonCloudMembersWithSbAccess > "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt"
 
-# get all Forum cloud members
+# get all Forum members belonging to INVISION_GROUP_ID1
 #FIXME: perPage should be a param
 
-${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInRequestedGroups.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
+${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInGroup_${INVISION_GROUP_ID1}.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
 
 #
 # Extract Invision profile URL for all found members
 
-jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInRequestedGroups.json" > "${_cache_dir}/forumProfileURLsWithSbAccess.txt"
+jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInGroup_${INVISION_GROUP_ID1}.json" > "${_cache_dir}/URLsOfForumMembersProfileInGroup_${INVISION_GROUP_ID1}.txt"
 
 #
 #FIXME: the Forum profile URL store in the Website attribute must match exactly the URL of the Forum profile
 #       Mainly, the trailing '/' must be there
 
 
-if [[ -n "${TEST_CONTENT4_forumProfiles}" ]]
-then
-    echo "${TEST_CONTENT4_forumProfiles}" > "${_cache_dir}/forumProfileURLsWithSbAccess.txt"
-fi
-
 #
 # get current member list of cloud group
 #
-getCurrentListOfUidsInCloudGroup > "${_cache_dir}/cloudGroupMembers.txt"
+getCurrentListOfUidsInCloudGroupToSync > "${_cache_dir}/cloudUidsInGroupToSync.txt"
 
 while read line
 do
@@ -379,7 +354,7 @@ do
 	clearCloudProfileCacheForCloudUID "${cloud_id}"
     fi
 
-done < "${_cache_dir}/forumProfileURLsWithSbAccess.txt"
+done < "${_cache_dir}/URLsOfForumMembersProfileInGroup_${INVISION_GROUP_ID1}.txt"
 
 _clearNonRemanentCachedFiles
 

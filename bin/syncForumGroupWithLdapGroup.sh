@@ -1,0 +1,386 @@
+#! /bin/bash
+
+HERE=$( dirname "$0" )
+PROJECT_ROOT_DIR="${HERE}/.."
+
+_cache_dir="/var/cache4sync"
+_previous_run_cache_dir="${_cache_dir}/previous_run"
+
+if [[ -n "${SHELL_DEBUG}" ]]
+then
+    set -x
+fi
+
+if [[ -d "${_cache_dir}" ]]
+then
+    # cache dir exists
+    :
+else
+    mkdir -p "${_cache_dir}"
+fi
+
+: ${LDAP_URL:='ldap://ldap:3389'}
+
+dsidm_cmd_to_evaluate="dsidm --basedn 'dc=planetecitroen,dc=fr' --binddn 'cn=Directory Manager' --pwdfile '/etc/pwdfile.txt' --json '${LDAP_URL}'"
+ldapsearch_cmd="ldapsearch -x -b "ou=people,dc=planetecitroen,dc=fr" -H ${LDAP_URL}"
+
+export LANG='en_US.utf8'
+
+env
+
+
+: ${CLOUD_LDAP_GROUP_NAME_TO_SYNC:='_NOT_INITILIZED_'}
+
+if [[ -z "${CURL_EXTRA_ARGs}" ]]
+then
+    CURL='curl'
+else
+    CURL="curl ${CURL_EXTRA_ARGs}"
+fi
+
+addUidToCloudGroup ()
+{
+    dn="$1"
+
+    eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' \'${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\'  \'${dn}\'
+    
+}
+
+getCurrentListOfUidsInCloudGroup ()
+{
+
+    cloud_uids=$( ${ldapsearch_cmd} \
+			   '(memberOf=cn='"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"',ou=groups,dc=planetecitroen,dc=fr)' \
+			    uid)
+
+    sed -n -e 's/^uid:[ \t]*//p' <<< "${cloud_uids}"
+
+}
+
+revokeServiceBoxAccess ()
+{
+    uid="$1"
+
+    eval ${dsidm_cmd_to_evaluate} group remove_member \'${ALLOWING_LDAP_GROUP_NAME}\'  \'${uid}\'
+}
+
+getCloudNonCloudMembersWithSbAccess ()
+{
+    # get the list of Cloud (from LDAP) user who
+    # - have access to SB
+    # - are not already cloud
+
+    # FIXME: the ldap filter should be a var
+
+    non_cloud_users_with_sb_access=$( ${ldapsearch_cmd} \
+					       '(&(|(memberOf=cn=utilisateur-servicebox,ou=groups,dc=planetecitroen,dc=fr)(memberOf=cn=utilisateur-serviceboxplus,ou=groups,dc=planetecitroen,dc=fr))(!(memberOf=cn='${CLOUD_LDAP_GROUP_NAME_TO_SYNC}',ou=groups,dc=planetecitroen,dc=fr)))' \
+					       uid)
+
+    sed -n -e 's/^uid:[ \t]*//p' <<< "${non_cloud_users_with_sb_access}"
+}
+
+getDataForValidCloudId ()
+{
+    # FIXME:
+    # this function assumes that cloud_uid is a valid and existing Cloud id
+    cloud_uid="$1"
+
+    url_encoded_uid=$( echo -n "${cloud_uid}" | jq -sRr '@uri' )
+    
+    _json_decode_curl_out=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${url_encoded_uid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.' )
+    echo "${_json_decode_curl_out}"
+}
+
+updateCloudProfilesCacheAndStopWithKey ()
+{
+
+    key_to_search_for="$1"
+
+    while read cloud_uid
+    do
+
+	# FIXME:
+	# we noticed in logs that sometime cloud_uid is empty. Why??
+	# catch and ignore this case
+	if [[ -z "${cloud_uid}" ]]
+	then
+	    echo "INFO: we got and empty cloud_uid. Ignore it" 1>&2
+	    continue
+	    # NOT REACHED
+	fi
+
+	cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+
+	if [[ -r "${cloud_profile_cache_file_name}" ]]
+	then
+	    # we already donwloaded the data
+	    echo "DEBUG: use cache files ${cloud_profile_cache_file_name}" 1>&2
+	else
+	    echo "DEBUG: rebuild cache files ${cloud_profile_cache_file_name}" 1>&2
+	    getDataForValidCloudId "${cloud_uid}"  > "${cloud_profile_cache_file_name}"
+	fi
+
+	if [[ -n "${key_to_search_for}" ]]
+	then
+	    if grep -q --fixed-strings "${key_to_search_for}" "${cloud_profile_cache_file_name}"
+	    then
+		break
+	    fi
+	fi
+
+    done < "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt"
+
+}
+
+clearCloudProfileCacheForCloudUID ()
+{
+    cloud_id="$1"
+
+    if [[ -r "${_cache_dir}"/cloud_profile_"${cloud_id}".json ]]
+    then
+       # in some cases (DEBUG mode), this file may not have been generated
+       mv -f "${_cache_dir}"/cloud_profile_"${cloud_id}".json "${_previous_run_cache_dir}"
+    fi
+}
+
+_initCache ()
+{
+
+    if [[ -d "${_previous_run_cache_dir}" ]]
+    then
+	# cache dir exists
+	:
+    else
+	mkdir -p "${_previous_run_cache_dir}"
+    fi
+
+    # remove possible files from a previous run
+    mv -f "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt" "${_previous_run_cache_dir}"
+    mv -f "${_cache_dir}/forumMembersWithAccess.json" "${_previous_run_cache_dir}"
+}
+
+_clearNonRemanentCachedFiles ()
+{
+    #
+    # remove all cloud profile without mandatory attributes
+    #
+    mandatory_json_attributes_array=( 'website' )
+
+    for attribute in "${mandatory_json_attributes_array[@]}"
+    do
+	obsolete_cloud_profiles=$( grep --files-with-match --fixed-strings "\"${attribute}\": \"\"" "${_cache_dir}"/cloud_profile_*.json )
+	while read obsolete_cache_filename
+	do
+	    if [[ -f "${obsolete_cache_filename}" ]]
+	    then
+		mv "${obsolete_cache_filename}" "${_previous_run_cache_dir}"
+	    fi
+	done <<< "${obsolete_cloud_profiles}"
+    done
+
+    if [[ -f "${_cache_dir}/cloudMembers.json" ]]
+    then
+	mv "${_cache_dir}/cloudMembers.json" "${_previous_run_cache_dir}"
+    fi
+}
+
+
+joinCloudSSOProfileWithInvisionProfile ()
+{
+    # WARNING!
+    #
+    # we assume the this profile has been created by SSO => it has the form "pc_forum_sso-<invision_profile_UID>"
+
+    cloud_id="$1"
+    invision_profile_url="$2"
+    invision_profile_uid="$3"
+
+    _curlResult=$(
+	${CURL} \
+	    -s \
+	    -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" \
+	    -H 'Content-Type: application/json' \
+	    -H 'Accept: application/json, text/plain, */*' \
+	    -H 'OCS-APIRequest: true' \
+	    -X PUT \
+	    --data '{"key":"website","value":"'${invision_profile_url}'"}' \
+	    "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_id}"
+	)
+
+    # cache file, if exists, is incorrect
+    clearCloudProfileCacheForCloudUID "${cloud_id}"
+
+}
+
+searchOrMayBeUpdateTheCloudProfileUID ()
+{
+    invision_profile_url="$1"
+
+    cloud_profile_entries=''
+    
+    # First update caches
+    updateCloudProfilesCacheAndStopWithKey "${invision_profile_url}"
+
+    cloud_profile_entries=$(
+	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cache_dir}/cloud_profile_"*.json
+			 )
+
+    if [[ -z "${cloud_profile_entries}" ]]
+    then
+	# searched entry not found
+	# => no Cloud user has ${invision_profile_url} url as attribute
+
+	#
+	# SSO special case
+	# ================
+	#
+	# Try to correct behind the scene for SSO Cloud profiles
+
+	# if a SSO user exists, it has the form "pc_forum_sso-<Invision UID>"
+
+	invision_profile_uid=$( echo "${invision_profile_url}" | sed -n 's|.*/profile/\([1-9][0-9]\+\)-.*|\1|p' )
+	cloud_sso_id_to_search_for="pc_forum_sso-${invision_profile_uid}"
+	
+	# search for seach a user with UID ${cloud_sso_id_to_search_for}
+	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_sso_id_to_search_for}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
+	if [[ "${cloud_ocs_request_statuscode}" == '200' ]]
+	then
+	    # The searched SSO user exists
+	    cloud_sso_id=${cloud_sso_id_to_search_for}
+
+	    # NOW have to update "website" attribute
+	    joinCloudSSOProfileWithInvisionProfile "${cloud_sso_id}" "${invision_profile_url}" "${invision_profile_uid}"
+
+	    # update cache file
+	    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_id}".json
+	    getDataForValidCloudId "${cloud_sso_id}" > "${cloud_profile_cache_file_name}"
+
+	    # this is the file we searched for
+	    cloud_profile_entries=${cloud_profile_cache_file_name}
+	fi
+    fi
+
+    # FIXME: we suppose that a single file name is returned
+    if [[ -z "${cloud_profile_entries}" ]]
+    then
+	echo ''
+	return 1
+    else
+	cloud_id=$( cat "${cloud_profile_entries}" | jq -r '.ocs.data.id' )
+	echo "${cloud_id}"
+	return 0
+    fi
+}
+
+# Get all forum members which are member of the required groups
+
+if [[ -z "${INVISION_GROUP_ID1}" ]]
+then
+    echo "ERROR: INVISION_GROUP_ID1 not set" 1>&2
+    exit 1
+fi
+
+_group_url_arg="group[]=${INVISION_GROUP_ID1}"
+
+if [[ -n "${INVISION_GROUP_ID2}" ]]
+then
+    _group_url_arg+="&group[]=${INVISION_GROUP_ID2}"
+fi
+
+if [[ -n "${INVISION_GROUP_ID3}" ]]
+then
+    _group_url_arg+="&group[]=${INVISION_GROUP_ID3}"
+fi
+
+#
+# Main
+# ====
+
+_initCache
+
+getCloudNonCloudMembersWithSbAccess > "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt"
+
+# get all Forum cloud members
+#FIXME: perPage should be a param
+
+${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInRequestedGroups.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
+
+#
+# Extract Invision profile URL for all found members
+
+jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInRequestedGroups.json" > "${_cache_dir}/forumProfileURLsWithSbAccess.txt"
+
+#
+#FIXME: the Forum profile URL store in the Website attribute must match exactly the URL of the Forum profile
+#       Mainly, the trailing '/' must be there
+
+
+if [[ -n "${TEST_CONTENT4_forumProfiles}" ]]
+then
+    echo "${TEST_CONTENT4_forumProfiles}" > "${_cache_dir}/forumProfileURLsWithSbAccess.txt"
+fi
+
+#
+# get current member list of cloud group
+#
+getCurrentListOfUidsInCloudGroup > "${_cache_dir}/cloudGroupMembers.txt"
+
+while read line
+do
+    echo "DEBUG: syncing ${line}" 1>&2
+
+    invision_profile_url="${line}"
+
+    # get CloudProfile entries for this profile
+    if cloud_id=$( searchOrMayBeUpdateTheCloudProfileUID "${invision_profile_url}" )
+    then
+	:
+    else
+	# could not get a cloud ID for the forum profile
+	echo "WARNING: no Cloud profile found for Forum profile ${invision_profile_url}"
+	continue
+    fi
+
+    # retrieve user description (dn + mail) in LDAP, based on his email address (mailto)
+    dn_search_result=$(
+	${ldapsearch_cmd} -z 1 "uid=${cloud_id}" dn mail
+    )
+    if grep -q '--regexp=^dn:' <<< ${dn_search_result}
+    then
+	# ldap search result OK
+	:
+    else
+	echo "INTERNAL ERROR: Could not find \"${cloud_id}\" in ldap while searching for Invision porfile ${invision_profile_url}" 1>&2
+	echo "	Ldap search result: ${dn_search_result}" 1>&2
+
+	# May be the user does not exist anymore
+	# remove cached information about this user
+	clearCloudProfileCacheForCloudUID "${cloud_id}"
+
+	continue
+	# NOT REACHED
+    fi
+
+    if grep -q --fixed-strings "${cloud_id}" "${_cache_dir}/cloudGroupMembers.txt"
+    then
+	# DN already member of cloud group => skip
+	(
+	    echo "INFO: \"${cloud_id}\" is already member of group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\". SKIP action."
+	) 1>&2
+
+    else
+	
+	dn=$( sed -n -e '/^dn: /s/^dn: //p' <<< ${dn_search_result} )
+	addUidToCloudGroup "${dn}"
+	(
+	    echo "INFO: \"${cloud_id}\" is now member of group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\""
+	) 1>&2
+	# User has been updated +> clear cache information
+	clearCloudProfileCacheForCloudUID "${cloud_id}"
+    fi
+
+done < "${_cache_dir}/forumProfileURLsWithSbAccess.txt"
+
+_clearNonRemanentCachedFiles
+
+exit 0

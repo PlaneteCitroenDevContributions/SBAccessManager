@@ -330,24 +330,22 @@ done \
     < "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}.txt" \
     > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt"
 
-exit 1
-    
 #
 # Cloud side data
 #
 
-# update cache for all uids
-while read cloud_uid
-do
-    updateCloudProfilesCacheAndStopWithKey "${cloud_uid}" "${_cache_dir}/cloudAllUIDs.txt"
-done
-
-getCurrentListOfUidsInCloudGroupToSync > "${_cache_dir}/cloudUIDsOfMembersInCloudGroup_${CLOUD_LDAP_GROUP_NAME_TO_SYNC}.txt"
+#!!!# update cache for all uids
+#!!!while read cloud_uid
+#!!!do
+#!!!    updateCloudProfilesCacheAndStopWithKey "${cloud_uid}" "${_cache_dir}/cloudAllUIDs.txt"
+#!!!done
+#!!!
+#!!!getCurrentListOfUidsInCloudGroupToSync > "${_cache_dir}/cloudUIDsOfMembersInCloudGroup_${CLOUD_LDAP_GROUP_NAME_TO_SYNC}.txt"
 
 # get correspondig Forum URL registered as Website Cloud profile attribute
 while read cloud_uid
 do
-    searchOrMayBeUpdateTheCloudProfileUID "${cloud_uid}"
+    dummy=$( searchOrMayBeUpdateTheCloudProfileUID "${cloud_uid}" )
 
     cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
     website_cloud_profile_attribute=$( jq -r '.ocs.data.website' "${cloud_profile_cache_file_name}" 2>/dev/null )
@@ -361,12 +359,12 @@ do
 	echo "${cloud_uid};${website_cloud_profile_attribute}"
     fi
     
-done < "${_cache_dir}/cloudUIDsOfMembersInCloudGroup_${CLOUD_LDAP_GROUP_NAME_TO_SYNC}.txt" > "${_cache_dir}/cloudUidsInGroup_${CLOUD_LDAP_GROUP_NAME_TO_SYNC}_wihCorrespondingForumProfile.txt"
-
-#
-#
+done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_wihCorrespondingForumProfile.txt"
 
 exit 1
+
+#
+#
 
 # remove from this list uids without matching Forum profile information (Website attribute)
 

@@ -13,6 +13,7 @@
 /assign_servicebox_pr_rights_from_cloud_calendar.env
 /assign_servicebox_doc_rights_from_cloud_calendar.env
 /sync_forum_affiliated_with_ldap_cloud_groups.env
+/sync_forum_groups_with_ldap_cloud_groups.env
 /_test*.env
 
 /_vols_/

@@ -42,6 +42,7 @@ RUN python3.9 -m pipenv install
 
 COPY bin/updateGroupsFromAppointements.sh  bin/updateGroupsFromAppointements.sh
 COPY bin/syncForumAffiliatedWithLdapGroups.sh  bin/syncForumAffiliatedWithLdapGroups.sh
+COPY bin/syncForumGroupWithLdapGroup.sh  bin/syncForumGroupWithLdapGroup.sh
 COPY src/getAppointments4Date.py src/getAppointments4Date.py
 
 ENV SHELL_DEBUG=''

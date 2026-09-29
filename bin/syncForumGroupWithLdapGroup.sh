@@ -172,7 +172,7 @@ updateCacheForListOfloudUid ()
 
     while read cloud_uid
     do
-	getAndUpdateCacheForSingleCloudUid "${cloud_uid}"
+	getAndUpdateCacheForSingleCloudUid "${cloud_uid}" >/dev/null
     done < "${file_of_cloud_uids}"
 }
 
@@ -200,7 +200,7 @@ _initCache ()
 
     # deleted outdate files
     # FIXME: 15 should be param
-    find "${_cache_dir}" -maxdepth 0 -mtime +15 -exec rm {}\;
+    find "${_cache_dir}" -maxdepth 0 -mtime +15 -exec rm {} \;
 }
 
 _clearNonRemanentCachedFiles ()

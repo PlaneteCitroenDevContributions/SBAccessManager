@@ -176,7 +176,7 @@ updateCacheForListOfloudUid ()
     done < "${file_of_cloud_uids}"
 }
 
-clearCloudProfileCacheForCloudUID ()
+OLD_clearCloudProfileCacheForCloudUID ()
 {
     cloud_id="$1"
 

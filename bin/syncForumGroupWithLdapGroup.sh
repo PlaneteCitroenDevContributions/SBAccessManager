@@ -417,7 +417,9 @@ while read id_and_url
 do
     cloud_uid="${id_and_url%;*}"
 
-    echo "=============== ${cloud_uid} ==============="
+    echo "INFO: adding Cloud uid \"${cloud_uid}\" to Ldap Group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\"" 1>&2
+    addUidToCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
+    
 done < "${_cache_dir}/cloudUidsToUpdate.txt"
 
 exit 1

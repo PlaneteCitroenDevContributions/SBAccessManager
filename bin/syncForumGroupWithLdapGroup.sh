@@ -89,7 +89,7 @@ getDataForValidCloudId ()
     echo "${_json_decode_curl_out}"
 }
 
-updateCloudProfilesCacheAndStopWithKey ()
+_OLD_updateCloudProfilesCacheAndStopWithKey ()
 {
 
     key_to_search_for="$1"
@@ -249,7 +249,7 @@ joinCloudSSOProfileWithInvisionProfile ()
 
 }
 
-searchOrMayBeUpdateTheCloudProfileUID ()
+searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 {
     invision_profile_url="$1"
 
@@ -307,10 +307,6 @@ searchOrMayBeUpdateTheCloudProfileUID ()
     fi
 }
 
-# Get all forum members which are member of the required groups
-
-_group_url_arg="group[]=${INVISION_GROUP_ID1}"
-
 #
 # Main
 # ====
@@ -327,6 +323,8 @@ updateCacheForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 # Invision side data
 #
 
+_group_url_arg="group[]=${INVISION_GROUP_ID1}"
+
 # get all Forum members belonging to INVISION_GROUP_ID1
 #FIXME: perPage should be a param
 
@@ -341,7 +339,7 @@ jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInGroup_${INVISION_GROU
 
 while read invision_profile_url
 do
-    cloud_uid=$( searchOrMayBeUpdateTheCloudProfileUID "${invision_profile_url}" )
+    cloud_uid=$( searchOrMayBeUpdateTheCorrespondingCloudProfileUID "${invision_profile_url}" )
 
     if [[ -z "${cloud_uid}" ]]
     then

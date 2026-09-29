@@ -136,6 +136,36 @@ updateCloudProfilesCacheAndStopWithKey ()
 
 }
 
+getAndUpdateCacheForSingleCloudUid ()
+{
+
+    cloud_uid="$1"
+
+    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+
+    if [[ -r "${cloud_profile_cache_file_name}" ]]
+    then
+	# we already donwloaded the data
+	echo "DEBUG: use cache files ${cloud_profile_cache_file_name}" 1>&2
+    else
+	echo "DEBUG: rebuild cache files ${cloud_profile_cache_file_name}" 1>&2
+	getDataForValidCloudId "${cloud_uid}"  > "${cloud_profile_cache_file_name}"
+    fi
+
+    cat "${cloud_profile_cache_file_name}"
+}
+
+updateCacheForListOfloudUid ()
+{
+
+    file_of_cloud_uids="$1"
+
+    while read cloud_uid
+    do
+	getAndUpdateCacheForSingleCloudUid "${cloud_uid}"
+    done < "${file_of_cloud_uids}"
+}
+
 clearCloudProfileCacheForCloudUID ()
 {
     cloud_id="$1"
@@ -332,23 +362,17 @@ done \
 
 #
 # Cloud side data
+# ---------------
 #
 
-#!!!# update cache for all uids
-#!!!while read cloud_uid
-#!!!do
-#!!!    updateCloudProfilesCacheAndStopWithKey "${cloud_uid}" "${_cache_dir}/cloudAllUIDs.txt"
-#!!!done
-#!!!
-#!!!getCurrentListOfUidsInCloudGroupToSync > "${_cache_dir}/cloudUIDsOfMembersInCloudGroup_${CLOUD_LDAP_GROUP_NAME_TO_SYNC}.txt"
+updateCacheForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 
 # get correspondig Forum URL registered as Website Cloud profile attribute
 while read cloud_uid
 do
-    dummy=$( searchOrMayBeUpdateTheCloudProfileUID "${cloud_uid}" )
+    cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
 
-    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
-    website_cloud_profile_attribute=$( jq -r '.ocs.data.website' "${cloud_profile_cache_file_name}" 2>/dev/null )
+    website_cloud_profile_attribute=$( echo "${cloud_user_data}" | jq -r '.ocs.data.website' 2>/dev/null )
     if [[ -z "${website_cloud_profile_attribute}" ]]
     then
 	# the attribute has not be set for this Cloud uid
@@ -359,7 +383,7 @@ do
 	echo "${cloud_uid};${website_cloud_profile_attribute}"
     fi
     
-done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_wihCorrespondingForumProfile.txt"
+done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_withCorrespondingForumProfile.txt"
 
 #
 #

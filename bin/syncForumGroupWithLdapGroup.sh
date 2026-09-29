@@ -64,6 +64,14 @@ addUidToCloudGroup ()
     
 }
 
+removeUidFromCloudGroup ()
+{
+    dn="$1"
+
+    eval ${dsidm_cmd_to_evaluate} 'group' 'remove_member' \'${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\'  \'${dn}\'
+    
+}
+
 getCurrentListOfUidsInCloudGroupToSync ()
 {
     # NOTICE: equivalent call to OCS NextCLoud call is very slow 
@@ -407,6 +415,10 @@ do
     
 done < "${_cache_dir}/cloudUidsInGroupToSync.txt" > "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt"
 
+#
+# Members of Forum group not member of Ldap group
+#
+
 cat "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
     "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
     "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt" \
@@ -419,6 +431,25 @@ do
 
     echo "INFO: adding Cloud uid \"${cloud_uid}\" to Ldap Group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\"" 1>&2
     addUidToCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
+    
+done < "${_cache_dir}/cloudUidsToUpdate.txt"
+
+#
+# Members of Ldap group not member of Forum group
+#
+
+cat "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt" \
+    "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt" \
+    "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
+    | sort \
+    | uniq -u > "${_cache_dir}/cloudUidsToUpdate.txt"
+
+while read id_and_url
+do
+    cloud_uid="${id_and_url%;*}"
+
+    echo "INFO: removing Cloud uid \"${cloud_uid}\" from Ldap Group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\"" 1>&2
+    removeUidFromCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
     
 done < "${_cache_dir}/cloudUidsToUpdate.txt"
 

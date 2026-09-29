@@ -407,6 +407,19 @@ do
     
 done < "${_cache_dir}/cloudUidsInGroupToSync.txt" > "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt"
 
+cat "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
+    "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
+    "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt" \
+    | sort \
+    | uniq -u > "${_cache_dir}/cloudUidsToUpdate.txt"
+
+while read id_and_url
+do
+    cloud_uid="${id_and_url%;*}"
+
+    echo "=============== ${cloud_uid} ==============="
+done < "${_cache_dir}/cloudUidsToUpdate.txt"
+
 exit 1
 
 ========================================

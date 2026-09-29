@@ -357,7 +357,6 @@ done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_withCorrespon
 # get current member list of cloud group
 #
 getCurrentListOfUidsInCloudGroupToSync "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}" > "${_cache_dir}/cloudUidsInGroupToSync.txt"
-exit 1
 
 while read cloud_uid
 do

@@ -198,10 +198,9 @@ _initCache ()
 	mkdir -p "${_previous_run_cache_dir}"
     fi
 
-    # remove possible files from a previous run
-    # FIXME: these files are not relevant in this script
-    mv -f "${_cache_dir}/cloudNonCloudMembersWithSbAccess.txt" "${_previous_run_cache_dir}"
-    mv -f "${_cache_dir}/forumMembersWithAccess.json" "${_previous_run_cache_dir}"
+    # deleted outdate files
+    # FIXME: 15 should be param
+    find "${_cache_dir}" -maxdepth 0 -mtime +15 -exec rm {}\;
 }
 
 _clearNonRemanentCachedFiles ()

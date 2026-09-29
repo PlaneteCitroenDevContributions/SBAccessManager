@@ -58,18 +58,19 @@ fi
 
 addUidToCloudGroup ()
 {
-    dn="$1"
+    cloud_uid="$1"
+
+    dn=$( eval ${dsidm_cmd_to_evaluate} user get \'${cloud_uid}\' | jq -r '.dn' )
 
     eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' \'${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\'  \'${dn}\'
-    
 }
 
 removeUidFromCloudGroup ()
 {
-    dn="$1"
+    cloud_uid="$1"
+    dn=$( eval ${dsidm_cmd_to_evaluate} user get \'${cloud_uid}\' | jq -r '.dn' )
 
     eval ${dsidm_cmd_to_evaluate} 'group' 'remove_member' \'${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\'  \'${dn}\'
-    
 }
 
 getCurrentListOfUidsInCloudGroupToSync ()
@@ -107,9 +108,8 @@ getAndUpdateCacheForSingleCloudUid ()
     if [[ -r "${cloud_profile_cache_file_name}" ]]
     then
 	# we already donwloaded the data
-	echo "DEBUG: use cache files ${cloud_profile_cache_file_name}" 1>&2
+	:
     else
-	echo "DEBUG: rebuild cache files ${cloud_profile_cache_file_name}" 1>&2
 	getDataForValidCloudId "${cloud_uid}"  > "${cloud_profile_cache_file_name}"
     fi
 

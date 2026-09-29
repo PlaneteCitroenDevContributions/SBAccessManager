@@ -97,55 +97,6 @@ getDataForValidCloudId ()
     echo "${_json_decode_curl_out}"
 }
 
-_OLD_updateCloudProfilesCacheAndStopWithKey ()
-{
-
-    key_to_search_for="$1"
-    filename_with_cloud_uid_list="$2"
-
-    if [[ -z "${filename_with_cloud_uid_list}" ]]
-    then
-	# to keep old code working
-	# FIXME: this should be removed
-	filename_with_cloud_uid_list="${_cache_dir}/cloudAllUIDs.txt"
-    fi
-
-    while read cloud_uid
-    do
-
-	# FIXME:
-	# we noticed in logs that sometime cloud_uid is empty. Why??
-	# catch and ignore this case
-	if [[ -z "${cloud_uid}" ]]
-	then
-	    echo "INFO: we got and empty cloud_uid. Ignore it" 1>&2
-	    continue
-	    # NOT REACHED
-	fi
-
-	cloud_profile_cache_file_name="${_cache_dir}/cloud_profile_${cloud_uid}.json"
-
-	if [[ -r "${cloud_profile_cache_file_name}" ]]
-	then
-	    # we already donwloaded the data
-	    echo "DEBUG: use cache files ${cloud_profile_cache_file_name}" 1>&2
-	else
-	    echo "DEBUG: rebuild cache files ${cloud_profile_cache_file_name}" 1>&2
-	    getDataForValidCloudId "${cloud_uid}"  > "${cloud_profile_cache_file_name}"
-	fi
-
-	if [[ -n "${key_to_search_for}" ]]
-	then
-	    if grep -q --fixed-strings "${key_to_search_for}" "${cloud_profile_cache_file_name}"
-	    then
-		break
-	    fi
-	fi
-
-    done < "${filename_with_cloud_uid_list}"
-
-}
-
 getAndUpdateCacheForSingleCloudUid ()
 {
 

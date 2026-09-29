@@ -66,9 +66,11 @@ addUidToCloudGroup ()
 
 getCurrentListOfUidsInCloudGroupToSync ()
 {
+    # NOTICE: equivalent call to OCS NextCLoud call is very slow 
+    cloud_group_cn="$1"
 
     cloud_uids=$( ${ldapsearch_cmd} \
-			   '(memberOf=cn='"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"',ou=groups,dc=planetecitroen,dc=fr)' \
+			   '(memberOf=cn='"${cloud_group_cn}"',ou=groups,dc=planetecitroen,dc=fr)' \
 			    uid)
 
     sed -n -e 's/^uid:[ \t]*//p' <<< "${cloud_uids}"
@@ -253,9 +255,6 @@ searchOrMayBeUpdateTheCloudProfileUID ()
 
     cloud_profile_entries=''
     
-    # First update caches
-    updateCloudProfilesCacheAndStopWithKey "${invision_profile_url}"
-
     cloud_profile_entries=$(
 	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cache_dir}/cloud_profile_"*.json
 			 )
@@ -285,10 +284,11 @@ searchOrMayBeUpdateTheCloudProfileUID ()
 
 	    # NOW have to update "website" attribute
 	    joinCloudSSOProfileWithInvisionProfile "${cloud_sso_id}" "${invision_profile_url}" "${invision_profile_uid}"
-
-	    # update cache file
+	    
+	    # and then update cache file
 	    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_id}".json
-	    getDataForValidCloudId "${cloud_sso_id}" > "${cloud_profile_cache_file_name}"
+	    rm "${cloud_profile_cache_file_name}"
+	    getAndUpdateCacheForSingleCloudUid "${cloud_sso_id}" > /dev/null
 
 	    # this is the file we searched for
 	    cloud_profile_entries=${cloud_profile_cache_file_name}
@@ -317,9 +317,11 @@ _group_url_arg="group[]=${INVISION_GROUP_ID1}"
 
 _initCache
 
-#
-# initial files setup
+# since we must process all cloud uids, first fetch and uddate cache for all cloud uids
+${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users?format=json' -H "OCS-APIRequest: true" \
+    | jq -r '.ocs.data.users[]' > "${_cache_dir}/cloudAllUIDs.txt"
 
+updateCacheForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 
 #
 # Invision side data
@@ -329,14 +331,6 @@ _initCache
 #FIXME: perPage should be a param
 
 ${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInGroup_${INVISION_GROUP_ID1}.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
-
-#
-# Cloud side
-#
-
-# since we must process all cloud uids, first fetch and uddate cache for all cloud uids
-${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users?format=json' -H "OCS-APIRequest: true" \
-    | jq -r '.ocs.data.users[]' > "${_cache_dir}/cloudAllUIDs.txt"
 
 #
 # Extract Invision profile URL for all found members
@@ -364,8 +358,6 @@ done \
 # Cloud side data
 # ---------------
 #
-
-updateCacheForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 
 # get correspondig Forum URL registered as Website Cloud profile attribute
 while read cloud_uid
@@ -398,14 +390,13 @@ done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_withCorrespon
 #
 # get current member list of cloud group
 #
-getCurrentListOfUidsInCloudGroupToSync > "${_cache_dir}/cloudUidsInGroupToSync.txt"
+getCurrentListOfUidsInCloudGroupToSync "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}" > "${_cache_dir}/cloudUidsInGroupToSync.txt"
 
 while read cloud_uid
 do
-    dummy=$( searchOrMayBeUpdateTheCloudProfileUID "${cloud_uid}" )
+    cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
 
-    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
-    website_cloud_profile_attribute=$( jq -r '.ocs.data.website' "${cloud_profile_cache_file_name}" 2>/dev/null )
+    website_cloud_profile_attribute=$( echo "${cloud_user_data}" | jq -r '.ocs.data.website' "${cloud_profile_cache_file_name}" 2>/dev/null )
     if [[ -z "${website_cloud_profile_attribute}" ]]
     then
 	# the attribute has not be set for this Cloud uid
@@ -416,7 +407,7 @@ do
 	echo "${cloud_uid};${website_cloud_profile_attribute}"
     fi
     
-done < "${_cache_dir}/cloudUidsInGroupToSync.txt" > "${_cache_dir}/cloudUidsInGroupToSync_wihCorrespondingForumProfile.txt"
+done < "${_cache_dir}/cloudUidsInGroupToSync.txt" > "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt"
 
 exit 1
 

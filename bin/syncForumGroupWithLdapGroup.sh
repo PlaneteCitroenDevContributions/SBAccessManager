@@ -123,7 +123,7 @@ _OLD_updateCloudProfilesCacheAndStopWithKey ()
 	    # NOT REACHED
 	fi
 
-	cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+	cloud_profile_cache_file_name="${_cache_dir}/cloud_profile_${cloud_uid}.json"
 
 	if [[ -r "${cloud_profile_cache_file_name}" ]]
 	then
@@ -227,6 +227,13 @@ _clearNonRemanentCachedFiles ()
     then
 	mv "${_cache_dir}/cloudMembers.json" "${_previous_run_cache_dir}"
     fi
+}
+
+_outdateCloudUidCacheDate () {
+
+    cloud_uid="$1"
+
+    rm -f "${_cache_dir}/cloud_profile_${cloud_uid}.json"
 }
 
 
@@ -431,6 +438,7 @@ do
 
     echo "INFO: adding Cloud uid \"${cloud_uid}\" to Ldap Group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\"" 1>&2
     addUidToCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
+    _outdateCloudUidCacheDate "${cloud_uid}"
     
 done < "${_cache_dir}/cloudUidsToUpdate.txt"
 
@@ -450,6 +458,7 @@ do
 
     echo "INFO: removing Cloud uid \"${cloud_uid}\" from Ldap Group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\"" 1>&2
     removeUidFromCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
+    _outdateCloudUidCacheDate "${cloud_uid}"
     
 done < "${_cache_dir}/cloudUidsToUpdate.txt"
 

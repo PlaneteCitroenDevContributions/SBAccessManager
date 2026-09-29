@@ -78,12 +78,15 @@ getCurrentListOfUidsInCloudGroupToSync ()
     # NOTICE: equivalent call to OCS NextCLoud call is very slow 
     cloud_group_cn="$1"
 
-    cloud_uids=$( ${ldapsearch_cmd} \
-			   '(memberOf=cn='"${cloud_group_cn}"',ou=groups,dc=planetecitroen,dc=fr)' \
-			    uid)
+    cloud_uids=$( eval ${dsidm_cmd_to_evaluate} group members \'${cloud_group_cn}\' | jq -r '.members[]' )
 
-    sed -n -e 's/^uid:[ \t]*//p' <<< "${cloud_uids}"
-
+    while read cn
+    do
+	if [[ -n "${cn}" ]]
+	then
+	    eval ${dsidm_cmd_to_evaluate} user get_dn \'${cn}\' |  jq -r '.attrs.uid[]'
+	fi
+    done <<< "${cloud_uids}"
 }
 
 getDataForValidCloudId ()
@@ -252,7 +255,7 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 	    
 	    # and then update cache file
 	    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_id}".json
-	    rm "${cloud_profile_cache_file_name}"
+	    _outdateCloudUidCacheDate "${cloud_sso_id}"
 	    getAndUpdateCacheForSingleCloudUid "${cloud_sso_id}" > /dev/null
 
 	    # this is the file we searched for
@@ -354,6 +357,7 @@ done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_withCorrespon
 # get current member list of cloud group
 #
 getCurrentListOfUidsInCloudGroupToSync "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}" > "${_cache_dir}/cloudUidsInGroupToSync.txt"
+exit 1
 
 while read cloud_uid
 do
@@ -380,7 +384,7 @@ cat "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
     "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
     "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt" \
     | sort \
-    | uniq -u > "${_cache_dir}/cloudUidsToUpdate.txt"
+    | uniq -u > "${_cache_dir}/cloudUidsToAdd.txt"
 
 while read id_and_url
 do
@@ -390,7 +394,11 @@ do
     addUidToCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
     _outdateCloudUidCacheDate "${cloud_uid}"
     
-done < "${_cache_dir}/cloudUidsToUpdate.txt"
+done < "${_cache_dir}/cloudUidsToAdd.txt"
+echo "ADD LIST"
+cat "${_cache_dir}/cloudUidsToAdd.txt"
+
+exit 1
 
 #
 # Members of Ldap group not member of Forum group
@@ -400,7 +408,7 @@ cat "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorre
     "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt" \
     "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
     | sort \
-    | uniq -u > "${_cache_dir}/cloudUidsToUpdate.txt"
+    | uniq -u > "${_cache_dir}/cloudUidsToRemove.txt"
 
 while read id_and_url
 do
@@ -410,7 +418,9 @@ do
     removeUidFromCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
     _outdateCloudUidCacheDate "${cloud_uid}"
     
-done < "${_cache_dir}/cloudUidsToUpdate.txt"
+done < "${_cache_dir}/cloudUidsToRemove.txt"
+echo "REMOVE LIST"
+cat "${_cache_dir}/cloudUidsToRemove.txt"
 
 exit 1
 

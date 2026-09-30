@@ -130,14 +130,20 @@ updateCacheForListOfloudUid ()
     done < "${file_of_cloud_uids}"
 }
 
-OLD_clearCloudProfileCacheForCloudUID ()
-{
-    cloud_id="$1"
+_outdateCloudUidCacheData () {
 
-    if [[ -r "${_cache_dir}"/cloud_profile_"${cloud_id}".json ]]
+    cloud_uid="$1"
+
+    cache_file="${_cache_dir}/cloud_profile_${cloud_uid}.json"
+
+    if [[ -r "${cache_file}" ]]
     then
-       # in some cases (DEBUG mode), this file may not have been generated
-       mv -f "${_cache_dir}"/cloud_profile_"${cloud_id}".json "${_previous_run_cache_dir}"
+	if [[ -d "${_previous_run_cache_dir}" ]]
+	then
+	    mv -f "${cache_file}" "${_previous_run_cache_dir}"
+	else
+	    rm -f "${cache_file}"
+	fi
     fi
 }
 
@@ -180,13 +186,6 @@ _clearNonRemanentCachedFiles ()
     then
 	mv "${_cache_dir}/cloudMembers.json" "${_previous_run_cache_dir}"
     fi
-}
-
-_outdateCloudUidCacheDate () {
-
-    cloud_uid="$1"
-
-    rm -f "${_cache_dir}/cloud_profile_${cloud_uid}.json"
 }
 
 
@@ -255,7 +254,7 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 	    
 	    # and then update cache file
 	    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_id}".json
-	    _outdateCloudUidCacheDate "${cloud_sso_id}"
+	    _outdateCloudUidCacheData "${cloud_sso_id}"
 	    getAndUpdateCacheForSingleCloudUid "${cloud_sso_id}" > /dev/null
 
 	    # this is the file we searched for

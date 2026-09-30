@@ -274,6 +274,8 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
     fi
 }
 
+#============================================================================================
+
 #
 # Main
 # ====
@@ -361,7 +363,7 @@ while read cloud_uid
 do
     cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
 
-    website_cloud_profile_attribute=$( echo "${cloud_user_data}" | jq -r '.ocs.data.website' "${cloud_profile_cache_file_name}" 2>/dev/null )
+    website_cloud_profile_attribute=$( echo "${cloud_user_data}" | jq -r '.ocs.data.website' 2>/dev/null )
     if [[ -z "${website_cloud_profile_attribute}" ]]
     then
 	# the attribute has not be set for this Cloud uid
@@ -395,8 +397,6 @@ do
 done < "${_cache_dir}/cloudUidsToAdd.txt"
 echo "ADD LIST"
 cat "${_cache_dir}/cloudUidsToAdd.txt"
-
-exit 1
 
 #
 # Members of Ldap group not member of Forum group

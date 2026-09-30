@@ -247,7 +247,7 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 	invision_profile_uid=$( echo "${invision_profile_url}" | sed -n 's|.*/profile/\([1-9][0-9]\+\)-.*|\1|p' )
 	cloud_sso_id_to_search_for="pc_forum_sso-${invision_profile_uid}"
 	
-	# search for seach a user with UID ${cloud_sso_id_to_search_for}
+	# search for such a user with UID ${cloud_sso_id_to_search_for}
 	cloud_ocs_request_statuscode=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users/'"${cloud_sso_id_to_search_for}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.meta.statuscode' )
 	if [[ "${cloud_ocs_request_statuscode}" == '200' ]]
 	then

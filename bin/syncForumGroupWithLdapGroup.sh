@@ -392,7 +392,7 @@ do
 
     echo "INFO: adding Cloud uid \"${cloud_uid}\" to Ldap Group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\"" 1>&2
     addUidToCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
-    _outdateCloudUidCacheDate "${cloud_uid}"
+    _outdateCloudUidCacheData "${cloud_uid}"
     
 done < "${_cache_dir}/cloudUidsToAdd.txt"
 echo "ADD LIST"

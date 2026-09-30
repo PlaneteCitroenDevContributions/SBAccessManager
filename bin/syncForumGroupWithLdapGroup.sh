@@ -395,8 +395,6 @@ do
     _outdateCloudUidCacheData "${cloud_uid}"
     
 done < "${_cache_dir}/cloudUidsToAdd.txt"
-echo "ADD LIST"
-cat "${_cache_dir}/cloudUidsToAdd.txt"
 
 #
 # Members of Ldap group not member of Forum group
@@ -417,10 +415,8 @@ do
     _outdateCloudUidCacheDate "${cloud_uid}"
     
 done < "${_cache_dir}/cloudUidsToRemove.txt"
-echo "REMOVE LIST"
-cat "${_cache_dir}/cloudUidsToRemove.txt"
 
-exit 1
+exit 0
 
 ========================================
 

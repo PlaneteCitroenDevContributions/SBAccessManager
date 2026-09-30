@@ -26,7 +26,10 @@ ldapsearch_cmd="ldapsearch -x -b "ou=people,dc=planetecitroen,dc=fr" -H ${LDAP_U
 
 export LANG='en_US.utf8'
 
-env
+if [[ -n "${SHELL_DEBUG}" ]]
+then
+    env
+fi
 
 Usage ()
 {
@@ -34,10 +37,10 @@ Usage ()
 }
 
 
-INVISION_GROUP_ID1="$1"
+INVISION_SOURCE_GROUP_ID_TO_SYNC="$1"
 CLOUD_LDAP_GROUP_NAME_TO_SYNC="$2"
 
-if [[ -z "${INVISION_GROUP_ID1}" ]]
+if [[ -z "${INVISION_SOURCE_GROUP_ID_TO_SYNC}" ]]
 then
     Usage
     exit 1
@@ -292,19 +295,19 @@ updateCacheForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 # Invision side data
 #
 
-_group_url_arg="group[]=${INVISION_GROUP_ID1}"
+_group_url_arg="group[]=${INVISION_SOURCE_GROUP_ID_TO_SYNC}"
 
-# get all Forum members belonging to INVISION_GROUP_ID1
+# get all Forum members belonging to INVISION_SOURCE_GROUP_ID_TO_SYNC
 #FIXME: perPage should be a param
 
-${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInGroup_${INVISION_GROUP_ID1}.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
+${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
 
 #
 # Extract Invision profile URL for all found members
 # --------------------------------------------------
 #
 
-jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInGroup_${INVISION_GROUP_ID1}.json" > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}.txt"
+jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}.json" > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}.txt"
 
 while read invision_profile_url
 do
@@ -318,8 +321,8 @@ do
 	echo "${cloud_uid};${invision_profile_url}"
     fi
 done \
-    < "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}.txt" \
-    > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt"
+    < "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}.txt" \
+    > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}_withCorrespondingCloudUid.txt"
 
 #
 # Cloud side data
@@ -382,7 +385,7 @@ done < "${_cache_dir}/cloudUidsInGroupToSync.txt" > "${_cache_dir}/cloudUidsInGr
 
 cat "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
     "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
-    "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt" \
+    "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}_withCorrespondingCloudUid.txt" \
     | sort \
     | uniq -u > "${_cache_dir}/cloudUidsToAdd.txt"
 
@@ -400,8 +403,8 @@ done < "${_cache_dir}/cloudUidsToAdd.txt"
 # Members of Ldap group not member of Forum group
 #
 
-cat "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt" \
-    "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_GROUP_ID1}_withCorrespondingCloudUid.txt" \
+cat "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}_withCorrespondingCloudUid.txt" \
+    "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}_withCorrespondingCloudUid.txt" \
     "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
     | sort \
     | uniq -u > "${_cache_dir}/cloudUidsToRemove.txt"

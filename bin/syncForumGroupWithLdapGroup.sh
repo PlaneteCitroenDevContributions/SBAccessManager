@@ -33,7 +33,9 @@ fi
 
 Usage ()
 {
-    echo "Usage: ..." 1>&2
+    echo "Usage: $( basename "$0" ) <Invision group ID> <Cloud LDAP group name>
+	- all members of <Invision group ID> are added to <Cloud LDAP group name>
+	- members of <Cloud LDAP group name> not in <Invision group ID> are remove from <Cloud LDAP group name>" 1>&2
 }
 
 

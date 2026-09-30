@@ -75,7 +75,7 @@ services:
 
    sync_forum_groups_with_ldap_cloud_groups:
       build: .
-#!!!!      restart: unless-stopped
+      restart: unless-stopped
       env_file:
         - path: ./global_config.env
           required: false
@@ -83,14 +83,20 @@ services:
           required: true
         
       environment:
-         DELAY: 1h
+         DELAY: 15m
       volumes:
          - ./pwdfile.txt:/etc/pwdfile.txt:ro
          - ./_vols_/sync_forum_groups_with_ldap_cloud_groups/cache/:/var/cache4sync/:rw
       command:
          - bash
          - -c
-         - '/code/bin/syncForumGroupWithLdapGroup.sh "$${INVISION_GROUP_ID1}" "$${LDAP_GROUP_LDAP_CN1}"'
+         - 'while true;
+            do
+               echo "INFO: $$( date )" 1>&2;
+               /code/bin/syncForumGroupWithLdapGroup.sh "$${INVISION_GROUP_ID1}" "$${LDAP_GROUP_LDAP_CN1}";
+               echo "INFO: $$( date ) ========== Next check in $${DELAY} ==========" 1>&2;
+               sleep $${DELAY};
+            done'
 #!!!!         - 'while true; do echo "INFO: $$( date )" 1>&2; /code/bin/syncForumAffiliatedWithLdapGroups.sh; echo "INFO: $$( date ) ========== Next check in $${DELAY} ==========" 1>&2; sleep $${DELAY}; done'
       networks:
          - internal_services

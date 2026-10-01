@@ -228,7 +228,7 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
     cloud_profile_entries=''
     
     cloud_profile_entries=$(
-	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cache_dir}/cloud_profile_"*.json
+	grep --files-with-matches --fixed-strings "\"${invision_profile_url}\"" "${_cache_dir}/cloud_profile_"*.json
 			 )
 
     #

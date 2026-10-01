@@ -231,7 +231,31 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 	grep --files-with-matches --fixed-strings "${invision_profile_url}" "${_cache_dir}/cloud_profile_"*.json
 			 )
 
-    if [[ -z "${cloud_profile_entries}" ]]
+    #
+    # Consistency check: verify that only 1 line has been return
+    #
+    cloud_profile_file=''
+    if [[ -n "${cloud_profile_entries}" ]]
+    then
+	nb_matches=$( echo "${cloud_profile_entries}" | wc -l )
+	if [[ "${nb_matches}" -eq 1 ]]
+	then
+	    cloud_profile_file="${cloud_profile_entries}"
+	else
+	    #
+	    # INCONSITENCY: we got multiple lines =>
+	    #    more than one Cloud profile with the same Forum profile
+	    #
+	    # Warn and use the first line only
+	    echo "WARNING: Forum profile \"${invision_profile_url}\" is associated to Cloud more that one Cloud user:" 1>&2
+	    echo "${cloud_profile_entries}" 1>&2
+
+	    cloud_profile_file=$( echo "${cloud_profile_entries}" | head -1 )
+	    echo "	Consider only data in file ${cloud_profile_file}" 1>&2
+	fi
+    fi
+
+    if [[ -z "${cloud_profile_file}" ]]
     then
 	# searched entry not found
 	# => no Cloud user has ${invision_profile_url} url as attribute
@@ -263,17 +287,16 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 	    getAndUpdateCacheForSingleCloudUid "${cloud_sso_id}" > /dev/null
 
 	    # this is the file we searched for
-	    cloud_profile_entries=${cloud_profile_cache_file_name}
+	    cloud_profile_file=${cloud_profile_cache_file_name}
 	fi
     fi
 
-    # FIXME: we suppose that a single file name is returned
     if [[ -z "${cloud_profile_entries}" ]]
     then
 	echo ''
 	return 1
     else
-	cloud_id=$( cat "${cloud_profile_entries}" | jq -r '.ocs.data.id' )
+	cloud_id=$( cat "${cloud_profile_file}" | jq -r '.ocs.data.id' )
 	echo "${cloud_id}"
 	return 0
     fi

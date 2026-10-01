@@ -132,6 +132,9 @@ updateCacheForListOfloudUid ()
     while read cloud_uid
     do
 	getAndUpdateCacheForSingleCloudUid "${cloud_uid}" >/dev/null
+
+	# TODO: ignore disabled accounts
+	
     done < "${file_of_cloud_uids}"
 }
 

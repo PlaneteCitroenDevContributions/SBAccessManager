@@ -168,29 +168,31 @@ _initCache ()
     find "${_cache_dir}" -maxdepth 0 -mtime +15 -exec rm {} \;
 }
 
-_clearNonRemanentCachedFiles ()
+_safeDeleteCachedFileList ()
 {
-    #
-    # remove all cloud profile without mandatory attributes
-    #
-    mandatory_json_attributes_array=( 'website' )
-
-    for attribute in "${mandatory_json_attributes_array[@]}"
-    do
-	obsolete_cloud_profiles=$( grep --files-with-match --fixed-strings "\"${attribute}\": \"\"" "${_cache_dir}"/cloud_profile_*.json )
-	while read obsolete_cache_filename
-	do
-	    if [[ -f "${obsolete_cache_filename}" ]]
-	    then
-		mv "${obsolete_cache_filename}" "${_previous_run_cache_dir}"
-	    fi
-	done <<< "${obsolete_cloud_profiles}"
-    done
-
-    if [[ -f "${_cache_dir}/cloudMembers.json" ]]
+    multiline_file_list="$1"
+    if [[ -n "${multiline_file_list}" ]]
     then
-	mv "${_cache_dir}/cloudMembers.json" "${_previous_run_cache_dir}"
+	while read obsolete_file
+	do
+	    if [[ -f "${obsolete_file}" ]]
+	    then
+		mv "${obsolete_file}" "${_previous_run_cache_dir}"
+	    fi
+	done <<< "${multiline_file_list}" 
     fi
+}
+
+_clearNonRemanentAndObsoleteCachedFiles ()
+{
+    matched=$( grep --files-with-match --fixed-strings '"website": ""' "${_cache_dir}"/cloud_profile_*.json )
+    _safeDeleteCachedFileList "${matched}"
+
+    matched=$( grep --files-without-match --fixed-strings '"website":' "${_cache_dir}"/cloud_profile_*.json )
+    _safeDeleteCachedFileList "${matched}"
+    
+    matched=$( grep --files-without-match --fixed-strings '"enabled": false' "${_cache_dir}"/cloud_profile_*.json )
+    _safeDeleteCachedFileList "${matched}"
 }
 
 
@@ -462,5 +464,7 @@ do
     _outdateCloudUidCacheData "${cloud_uid}"
     
 done < "${_cache_dir}/cloudUidsToRemove.txt"
+
+_clearNonRemanentAndObsoleteCachedFiles
 
 exit 0

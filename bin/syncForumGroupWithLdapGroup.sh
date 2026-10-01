@@ -131,10 +131,7 @@ updateCacheForListOfloudUid ()
 
     while read cloud_uid
     do
-	getAndUpdateCacheForSingleCloudUid "${cloud_uid}" >/dev/null
-
-	# TODO: ignore disabled accounts
-	
+	cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
     done < "${file_of_cloud_uids}"
 }
 
@@ -370,15 +367,26 @@ while read cloud_uid
 do
     cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
 
-    website_cloud_profile_attribute=$( echo "${cloud_user_data}" | jq -r '.ocs.data.website' 2>/dev/null )
-    if [[ -z "${website_cloud_profile_attribute}" ]]
+    user_enabled=$( echo "${cloud_user_data}" | jq -r '.ocs.data.enabled' 2>/dev/null )
+
+    if [[ "${user_enabled}" == 'true' ]]
     then
+	
+	website_cloud_profile_attribute=$( echo "${cloud_user_data}" | jq -r '.ocs.data.website' 2>/dev/null )
+	
+	if [[ -z "${website_cloud_profile_attribute}" ]]
+	then
+	    # the attribute has not be set for this Cloud uid
+	    # skip this uid
+	    :
+	else
+	    # keep this uid for further computation
+	    echo "${cloud_uid};${website_cloud_profile_attribute}"
+	fi
+    else
 	# the attribute has not be set for this Cloud uid
 	# skip this uid
 	:
-    else
-	# keep this uid for further computation
-	echo "${cloud_uid};${website_cloud_profile_attribute}"
     fi
     
 done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_withCorrespondingForumProfile.txt"

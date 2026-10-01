@@ -254,7 +254,7 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 	    echo "	Consider only data in file ${cloud_profile_file}" 1>&2
 
 	    # forget remaining file
-	    ignored_files=$( echo "cloud_profile_entries" | head +1 )
+	    ignored_files=$( echo "${cloud_profile_entries}" | tail --lines=+2 )
 	    while read filename
 	    do
 		rm "${filename}"

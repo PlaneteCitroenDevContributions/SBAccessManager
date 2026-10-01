@@ -191,7 +191,7 @@ _clearNonRemanentAndObsoleteCachedFiles ()
     matched=$( grep --files-without-match --fixed-strings '"website":' "${_cache_dir}"/cloud_profile_*.json )
     _safeDeleteCachedFileList "${matched}"
     
-    matched=$( grep --files-without-match --fixed-strings '"enabled": false' "${_cache_dir}"/cloud_profile_*.json )
+    matched=$( grep --files-with-match --fixed-strings '"enabled": false' "${_cache_dir}"/cloud_profile_*.json )
     _safeDeleteCachedFileList "${matched}"
 }
 

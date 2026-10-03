@@ -76,14 +76,13 @@ services:
    sync_forum_groups_with_ldap_cloud_groups:
       build: .
       restart: unless-stopped
+      user: 1001:1001
       env_file:
         - path: ./global_config.env
           required: false
         - path: ./sync_forum_groups_with_ldap_cloud_groups.env
           required: true
         
-      environment:
-         DELAY: 15m
       volumes:
          - ./pwdfile.txt:/etc/pwdfile.txt:ro
          - ./_vols_/sync_forum_groups_with_ldap_cloud_groups/cache/:/var/cache4sync/:rw

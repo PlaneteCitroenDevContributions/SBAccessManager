@@ -18,6 +18,7 @@ export LANG='en_US.utf8'
 if [[ -n "${SHELL_DEBUG}" ]]
 then
     env
+    set -x
 fi
 
 Usage ()
@@ -43,7 +44,7 @@ then
     exit 1
 fi
 
-_cache_dir="/var/cache4sync${INVISION_SOURCE_GROUP_ID_TO_SYNC}"
+_cache_dir="/var/cache4sync/${INVISION_SOURCE_GROUP_ID_TO_SYNC}"
 _previous_run_cache_dir="${_cache_dir}/previous_run"
 
 if [[ -z "${CURL_EXTRA_ARGs}" ]]

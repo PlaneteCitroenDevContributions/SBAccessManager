@@ -124,7 +124,7 @@ getAndUpdateCacheForSingleCloudUid ()
     cat "${cloud_profile_cache_file_name}"
 }
 
-updateCacheForListOfloudUid ()
+updateDumpForListOfloudUid ()
 {
 
     file_of_cloud_uids="$1"
@@ -324,7 +324,7 @@ _initCache
 ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users?format=json' -H "OCS-APIRequest: true" \
     | jq -r '.ocs.data.users[]' > "${_cache_dir}/cloudAllUIDs.txt"
 
-updateCacheForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
+updateDumpForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 
 #
 # Invision side data
@@ -364,11 +364,12 @@ done \
 # ---------------
 #
 
-# get correspondig Forum URL registered as Website Cloud profile attribute
+# get corresponding Forum URL registered as Website Cloud profile attribute
 while read cloud_uid
 do
     cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
 
+    set -x
     user_enabled=$( echo "${cloud_user_data}" | jq -r '.ocs.data.enabled' 2>/dev/null )
 
     if [[ "${user_enabled}" == 'true' ]]
@@ -390,6 +391,7 @@ do
 	# skip this uid
 	:
     fi
+    set +x
     
 done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_withCorrespondingForumProfile.txt"
 
@@ -410,6 +412,9 @@ getCurrentListOfUidsInCloudGroupToSync "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}" > "${_
 
 while read cloud_uid
 do
+    !!!!FIXME: should check if account is enabled
+    
+
     cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
 
     website_cloud_profile_attribute=$( echo "${cloud_user_data}" | jq -r '.ocs.data.website' 2>/dev/null )

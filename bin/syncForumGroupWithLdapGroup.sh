@@ -3,20 +3,9 @@
 HERE=$( dirname "$0" )
 PROJECT_ROOT_DIR="${HERE}/.."
 
-_cache_dir="/var/cache4sync"
-_previous_run_cache_dir="${_cache_dir}/previous_run"
-
 if [[ -n "${SHELL_DEBUG}" ]]
 then
     set -x
-fi
-
-if [[ -d "${_cache_dir}" ]]
-then
-    # cache dir exists
-    :
-else
-    mkdir -p "${_cache_dir}"
 fi
 
 : ${LDAP_URL:='ldap://ldap:3389'}
@@ -53,6 +42,9 @@ then
     Usage
     exit 1
 fi
+
+_cache_dir="/var/cache4sync${INVISION_SOURCE_GROUP_ID_TO_SYNC}"
+_previous_run_cache_dir="${_cache_dir}/previous_run"
 
 if [[ -z "${CURL_EXTRA_ARGs}" ]]
 then
@@ -94,7 +86,7 @@ getCurrentListOfUidsInCloudGroupToSync ()
     done <<< "${cloud_uids}"
 }
 
-getDataForValidCloudId ()
+fetchDataForValidCloudId ()
 {
     # FIXME:
     # this function assumes that cloud_uid is a valid and existing Cloud id
@@ -118,7 +110,7 @@ getAndUpdateCacheForSingleCloudUid ()
 	# we already donwloaded the data
 	:
     else
-	getDataForValidCloudId "${cloud_uid}"  > "${cloud_profile_dump_file_name}"
+	fetchDataForValidCloudId "${cloud_uid}"  > "${cloud_profile_dump_file_name}"
     fi
 
     cat "${cloud_profile_dump_file_name}"
@@ -159,7 +151,7 @@ ignoreDisabledCloudUidsAndUpdateDump ()
     done > "${active_cloud_uids_file}"
 }
 
-_outdateCloudUidCacheData () {
+_outdateCloudUidDumpData () {
 
     cloud_uid="$1"
 
@@ -178,6 +170,14 @@ _outdateCloudUidCacheData () {
 
 _initCache ()
 {
+
+    if [[ -d "${_cache_dir}" ]]
+    then
+	# cache dir exists
+	:
+    else
+	mkdir -p "${_cache_dir}"
+    fi
 
     if [[ -d "${_previous_run_cache_dir}" ]]
     then
@@ -317,7 +317,7 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 	    
 	    # and then update cache file
 	    cloud_profile_dump_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_id}".json
-	    _outdateCloudUidCacheData "${cloud_sso_id}"
+	    _outdateCloudUidDumpData "${cloud_sso_id}"
 	    getAndUpdateCacheForSingleCloudUid "${cloud_sso_id}" > /dev/null
 
 	    # this is the file we searched for
@@ -436,10 +436,13 @@ done < "${_cache_dir}/cloudActiveUIDs.txt" > "${_cache_dir}/cloudUids_withCorres
 #
 getCurrentListOfUidsInCloudGroupToSync "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}" > "${_cache_dir}/cloudUidsInGroupToSync.txt"
 
+cat "${_cache_dir}/cloudUidsInGroupToSync.txt" \
+    "${_cache_dir}/cloudActiveUIDs.txt" \
+    | sort \
+    | uniq -d > "${_cache_dir}/cloudActiveUidsInGroupToSync.txt"
+
 while read cloud_uid
 do
-    !!!!FIXME: should check if account is enabled
-    
 
     cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
 
@@ -454,7 +457,7 @@ do
 	echo "${cloud_uid};${website_cloud_profile_attribute}"
     fi
     
-done < "${_cache_dir}/cloudUidsInGroupToSync.txt" > "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt"
+done < "${_cache_dir}/cloudActiveUidsInGroupToSync.txt" > "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt"
 
 #
 # Members of Forum group not member of Ldap group
@@ -472,7 +475,7 @@ do
 
     echo "INFO: adding Cloud uid \"${cloud_uid}\" to Ldap Group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\"" 1>&2
     addUidToCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
-    _outdateCloudUidCacheData "${cloud_uid}"
+    _outdateCloudUidDumpData "${cloud_uid}"
     
 done < "${_cache_dir}/cloudUidsToAdd.txt"
 
@@ -492,7 +495,7 @@ do
 
     echo "INFO: removing Cloud uid \"${cloud_uid}\" from Ldap Group \"${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\"" 1>&2
     removeUidFromCloudGroup "${cloud_uid}" "${CLOUD_LDAP_GROUP_NAME_TO_SYNC}"
-    _outdateCloudUidCacheData "${cloud_uid}"
+    _outdateCloudUidDumpData "${cloud_uid}"
     
 done < "${_cache_dir}/cloudUidsToRemove.txt"
 

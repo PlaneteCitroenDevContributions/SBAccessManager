@@ -111,17 +111,17 @@ getAndUpdateCacheForSingleCloudUid ()
 
     cloud_uid="$1"
 
-    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+    cloud_profile_dump_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
 
-    if [[ -r "${cloud_profile_cache_file_name}" ]]
+    if [[ -r "${cloud_profile_dump_file_name}" ]]
     then
 	# we already donwloaded the data
 	:
     else
-	getDataForValidCloudId "${cloud_uid}"  > "${cloud_profile_cache_file_name}"
+	getDataForValidCloudId "${cloud_uid}"  > "${cloud_profile_dump_file_name}"
     fi
 
-    cat "${cloud_profile_cache_file_name}"
+    cat "${cloud_profile_dump_file_name}"
 }
 
 updateDumpForListOfloudUid ()
@@ -135,7 +135,7 @@ updateDumpForListOfloudUid ()
     done < "${file_of_cloud_uids}"
 }
 
-ignoreDisabledCloudUids ()
+ignoreDisabledCloudUidsAndUpdateDump ()
 {
     cloud_uids_file="$1"
     active_cloud_uids_file="$2"
@@ -143,7 +143,7 @@ ignoreDisabledCloudUids ()
 
     while read cluid_uid
     do
-	cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+	cloud_profile_dump_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
 
 	user_enabled=$( echo "${cloud_user_data}" | jq -r '.ocs.data.enabled' 2>/dev/null )
 	
@@ -151,6 +151,10 @@ ignoreDisabledCloudUids ()
 	then
 	    # keep this uid
 	    echo "${cloud_uid}"
+	else
+	    #
+	    # remove this dump
+	    rm -f "${cloud_profile_dump_file_name}"
 	fi
     done > "${active_cloud_uids_file}"
 }
@@ -312,12 +316,12 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 	    joinCloudSSOProfileWithInvisionProfile "${cloud_sso_id}" "${invision_profile_url}" "${invision_profile_uid}"
 	    
 	    # and then update cache file
-	    cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_id}".json
+	    cloud_profile_dump_file_name="${_cache_dir}"/cloud_profile_"${cloud_sso_id}".json
 	    _outdateCloudUidCacheData "${cloud_sso_id}"
 	    getAndUpdateCacheForSingleCloudUid "${cloud_sso_id}" > /dev/null
 
 	    # this is the file we searched for
-	    cloud_profile_file=${cloud_profile_cache_file_name}
+	    cloud_profile_file=${cloud_profile_dump_file_name}
 	fi
     fi
 
@@ -354,7 +358,7 @@ ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE
 
 updateDumpForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 
-ignoreDisabledCloudUids "${_cache_dir}/cloudAllUIDs.txt" "${_cache_dir}/cloudActiveUIDs.txt" 
+ignoreDisabledCloudUidsAndUpdateDump "${_cache_dir}/cloudAllUIDs.txt" "${_cache_dir}/cloudActiveUIDs.txt" 
 
 #
 # Cloud data

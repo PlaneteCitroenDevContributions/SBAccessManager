@@ -147,26 +147,21 @@ _outdateCloudUidDumpData () {
 
 ignoreDisabledCloudUidsAndUpdateDump ()
 {
+    #FIXME: first arg no more used
     cloud_uids_file="$1"
     active_cloud_uids_file="$2"
 
+    disabled_profiles_json=$( jq -s . "${_cache_dir}"/cloud_profile_*.json | jq -r '.[].ocs.data | select(.enabled==false)' )
+    disabled_profiles_uid_list=$( "${disabled_profiles_json}" | jq -r '.id' )
 
     while read cloud_uid
     do
-	cloud_profile_dump_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+	_outdateCloudUidDumpData "${cloud_uid}"
+    done <<<"${disabled_profiles_uid_list}"
 
-	user_enabled=$( echo "${cloud_user_data}" | jq -r '.ocs.data.enabled' 2>/dev/null )
-	
-	if [[ "${user_enabled}" != 'false' ]]
-	then
-	    # keep this uid
-	    echo "${cloud_uid}"
-	else
-	    #
-	    # remove this dump
-	    _outdateCloudUidDumpData "${cluid_uid}"
-	fi
-    done <"${cloud_uids_file}" >"${active_cloud_uids_file}"
+    enabled_profiles_json=$( jq -s . "${_cache_dir}"/cloud_profile_*.json | jq -r '.[].ocs.data | select(.enabled==true)' )
+    enabled_profiles_uid_list=$( "${disabled_profiles_json}" | jq -r '.id' )
+    echo "${enabled_profiles_uid_list} >"${active_cloud_uids_file}"
 }
 
 _initCache ()

@@ -135,6 +135,26 @@ updateDumpForListOfloudUid ()
     done < "${file_of_cloud_uids}"
 }
 
+ignoreDisabledCloudUids ()
+{
+    cloud_uids_file="$1"
+    active_cloud_uids_file="$2"
+
+
+    while read cluid_uid
+    do
+	cloud_profile_cache_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
+
+	user_enabled=$( echo "${cloud_user_data}" | jq -r '.ocs.data.enabled' 2>/dev/null )
+	
+	if [[ "${user_enabled}" != 'false' ]]
+	then
+	    # keep this uid
+	    echo "${cloud_uid}"
+	fi
+    done > "${active_cloud_uids_file}"
+}
+
 _outdateCloudUidCacheData () {
 
     cloud_uid="$1"
@@ -320,15 +340,25 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 
 _initCache
 
+#
+# Init datas
+#
+
+#
+# Cloud data
+# ==========
+
 # since we must process all cloud uids, first fetch and uddate cache for all cloud uids
 ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users?format=json' -H "OCS-APIRequest: true" \
     | jq -r '.ocs.data.users[]' > "${_cache_dir}/cloudAllUIDs.txt"
 
 updateDumpForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 
+ignoreDisabledCloudUids "${_cache_dir}/cloudAllUIDs.txt" "${_cache_dir}/cloudActiveUIDs.txt" 
+
 #
-# Invision side data
-#
+# Cloud data
+# ==========
 
 _group_url_arg="group[]=${INVISION_SOURCE_GROUP_ID_TO_SYNC}"
 
@@ -336,6 +366,10 @@ _group_url_arg="group[]=${INVISION_SOURCE_GROUP_ID_TO_SYNC}"
 #FIXME: perPage should be a param
 
 ${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}.json" 'https://www.planete-citroen.com/api/core/members/?'"${_group_url_arg}"'&perPage=5000'
+
+#
+# buils working data
+# ==================
 
 #
 # Extract Invision profile URL for all found members
@@ -369,31 +403,19 @@ while read cloud_uid
 do
     cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
 
-    set -x
-    user_enabled=$( echo "${cloud_user_data}" | jq -r '.ocs.data.enabled' 2>/dev/null )
-
-    if [[ "${user_enabled}" == 'true' ]]
+    website_cloud_profile_attribute=$( echo "${cloud_user_data}" | jq -r '.ocs.data.website' 2>/dev/null )
+	
+    if [[ -z "${website_cloud_profile_attribute}" ]]
     then
-	
-	website_cloud_profile_attribute=$( echo "${cloud_user_data}" | jq -r '.ocs.data.website' 2>/dev/null )
-	
-	if [[ -z "${website_cloud_profile_attribute}" ]]
-	then
-	    # the attribute has not be set for this Cloud uid
-	    # skip this uid
-	    :
-	else
-	    # keep this uid for further computation
-	    echo "${cloud_uid};${website_cloud_profile_attribute}"
-	fi
-    else
 	# the attribute has not be set for this Cloud uid
 	# skip this uid
 	:
+    else
+	# keep this uid for further computation
+	echo "${cloud_uid};${website_cloud_profile_attribute}"
     fi
-    set +x
     
-done < "${_cache_dir}/cloudAllUIDs.txt" > "${_cache_dir}/cloudUids_withCorrespondingForumProfile.txt"
+done < "${_cache_dir}/cloudActiveUIDs.txt" > "${_cache_dir}/cloudUids_withCorrespondingForumProfile.txt"
 
 #
 #

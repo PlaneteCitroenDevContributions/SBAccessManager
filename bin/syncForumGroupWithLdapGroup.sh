@@ -151,7 +151,7 @@ ignoreDisabledCloudUidsAndUpdateDump ()
     active_cloud_uids_file="$2"
 
 
-    while read cluid_uid
+    while read cloud_uid
     do
 	cloud_profile_dump_file_name="${_cache_dir}"/cloud_profile_"${cloud_uid}".json
 
@@ -166,7 +166,7 @@ ignoreDisabledCloudUidsAndUpdateDump ()
 	    # remove this dump
 	    _outdateCloudUidDumpData "${cluid_uid}"
 	fi
-    done > "${active_cloud_uids_file}"
+    done <"${cloud_uids_file}" >"${active_cloud_uids_file}"
 }
 
 _initCache ()

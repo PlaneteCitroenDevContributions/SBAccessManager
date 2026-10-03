@@ -127,6 +127,23 @@ updateDumpForListOfloudUid ()
     done < "${file_of_cloud_uids}"
 }
 
+_outdateCloudUidDumpData () {
+
+    cloud_uid="$1"
+
+    cache_file="${_cache_dir}/cloud_profile_${cloud_uid}.json"
+
+    if [[ -r "${cache_file}" ]]
+    then
+	if [[ -d "${_previous_run_cache_dir}" ]]
+	then
+	    mv -f "${cache_file}" "${_previous_run_cache_dir}"
+	else
+	    rm -f "${cache_file}"
+	fi
+    fi
+}
+
 ignoreDisabledCloudUidsAndUpdateDump ()
 {
     cloud_uids_file="$1"
@@ -146,26 +163,9 @@ ignoreDisabledCloudUidsAndUpdateDump ()
 	else
 	    #
 	    # remove this dump
-	    rm -f "${cloud_profile_dump_file_name}"
+	    _outdateCloudUidDumpData "${cluid_uid}"
 	fi
     done > "${active_cloud_uids_file}"
-}
-
-_outdateCloudUidDumpData () {
-
-    cloud_uid="$1"
-
-    cache_file="${_cache_dir}/cloud_profile_${cloud_uid}.json"
-
-    if [[ -r "${cache_file}" ]]
-    then
-	if [[ -d "${_previous_run_cache_dir}" ]]
-	then
-	    mv -f "${cache_file}" "${_previous_run_cache_dir}"
-	else
-	    rm -f "${cache_file}"
-	fi
-    fi
 }
 
 _initCache ()
@@ -209,6 +209,8 @@ _safeDeleteCachedFileList ()
 
 _clearNonRemanentAndObsoleteCachedFiles ()
 {
+    # FIXME: is this still necessary???
+
     matched=$( grep --files-with-match --fixed-strings '"website": ""' "${_cache_dir}"/cloud_profile_*.json )
     _safeDeleteCachedFileList "${matched}"
 

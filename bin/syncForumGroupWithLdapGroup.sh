@@ -355,8 +355,6 @@ _initCache
 ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users?format=json' -H "OCS-APIRequest: true" \
     | jq -r '.ocs.data.users[]' > "${_cache_dir}/cloudAllUIDs.txt"
 
-echo 'bernhara' > "${_cache_dir}/cloudAllUIDs.txt"
-
 updateDumpForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 
 ignoreDisabledCloudUidsAndUpdateDump "${_cache_dir}/cloudAllUIDs.txt" "${_cache_dir}/cloudActiveUIDs.txt" 

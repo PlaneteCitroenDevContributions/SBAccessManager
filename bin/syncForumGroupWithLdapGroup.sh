@@ -151,17 +151,18 @@ ignoreDisabledCloudUidsAndUpdateDump ()
     cloud_uids_file="$1"
     active_cloud_uids_file="$2"
 
-    disabled_profiles_json=$( jq -s . "${_cache_dir}"/cloud_profile_*.json | jq -r '.[].ocs.data | select(.enabled==false)' )
-    disabled_profiles_uid_list=$( "${disabled_profiles_json}" | jq -r '.id' )
+    disabled_profiles_uid_list=$( jq -s . "${_cache_dir}"/cloud_profile_*.json | jq -r '.[].ocs.data | select(.enabled==false) | .id' )
 
     while read cloud_uid
     do
-	_outdateCloudUidDumpData "${cloud_uid}"
+	if [[ -n "${cloud_uid}" ]]
+	then
+	    _outdateCloudUidDumpData "${cloud_uid}"
+	fi
     done <<<"${disabled_profiles_uid_list}"
 
-    enabled_profiles_json=$( jq -s . "${_cache_dir}"/cloud_profile_*.json | jq -r '.[].ocs.data | select(.enabled==true)' )
-    enabled_profiles_uid_list=$( "${disabled_profiles_json}" | jq -r '.id' )
-    echo "${enabled_profiles_uid_list} >"${active_cloud_uids_file}"
+    enabled_profiles_uid_list=$( jq -s . "${_cache_dir}"/cloud_profile_*.json | jq -r '.[].ocs.data | select(.enabled==true) | .id' )
+    echo "${enabled_profiles_uid_list}" >"${active_cloud_uids_file}"
 }
 
 _initCache ()
@@ -353,6 +354,8 @@ _initCache
 # since we must process all cloud uids, first fetch and uddate cache for all cloud uids
 ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/users?format=json' -H "OCS-APIRequest: true" \
     | jq -r '.ocs.data.users[]' > "${_cache_dir}/cloudAllUIDs.txt"
+
+echo 'bernhara' > "${_cache_dir}/cloudAllUIDs.txt"
 
 updateDumpForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 

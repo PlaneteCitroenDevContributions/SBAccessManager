@@ -357,7 +357,7 @@ ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE
 
 updateDumpForListOfloudUid "${_cache_dir}/cloudAllUIDs.txt"
 
-ignoreDisabledCloudUidsAndUpdateDump "${_cache_dir}/cloudAllUIDs.txt" "${_cache_dir}/cloudActiveUIDs.txt" 
+ignoreDisabledCloudUidsAndUpdateDump "${_cache_dir}/cloudAllUIDs.txt" "${_cache_dir}/cloudActiveUIDs.txt"
 
 #
 # Cloud data

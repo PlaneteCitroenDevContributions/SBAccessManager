@@ -54,9 +54,33 @@ else
     CURL="curl ${CURL_EXTRA_ARGs}"
 fi
 
+_TMP_REMAP_CLOUD_UID_TO_LDAP_CN ()
+{
+    cloud_uid="$1"
+
+    # FIXME: inconsistency between Cloud & Ldap => uid mismatch
+    # remap Cloud uids to the corresponding Ldap dn
+
+    case "${}" in
+	'8e198ee0-d5b3-46fa-be8e-f2b36402b433')
+	    cloud_uid='pc_forum_sso-36979'
+	    ;;
+	'de2c9397-d5e9-49ed-a2b7-a6ad2673f3da')
+	    cloud_uid='pc_forum_sso-7212'
+	    ;;
+    esac
+
+    echo "${cloud_uid}"
+}
+
+
 addUidToCloudGroup ()
 {
     cloud_uid="$1"
+
+    # FIXME: inconsistency between Cloud & Ldap => uid mismatch
+    remapped_cloud_uid=$( _TMP_REMAP_CLOUD_UID_TO_LDAP_CN "${cloud_uid}" )
+    cloud_uid="${remapped_cloud_uid}"
 
     dn=$( eval ${dsidm_cmd_to_evaluate} user get \'${cloud_uid}\' | jq -r '.dn' )
 
@@ -66,6 +90,11 @@ addUidToCloudGroup ()
 removeUidFromCloudGroup ()
 {
     cloud_uid="$1"
+
+    # FIXME: inconsistency between Cloud & Ldap => uid mismatch
+    remapped_cloud_uid=$( _TMP_REMAP_CLOUD_UID_TO_LDAP_CN "${cloud_uid}" )
+    cloud_uid="${remapped_cloud_uid}"
+
     dn=$( eval ${dsidm_cmd_to_evaluate} user get \'${cloud_uid}\' | jq -r '.dn' )
 
     eval ${dsidm_cmd_to_evaluate} 'group' 'remove_member' \'${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\'  \'${dn}\'
@@ -78,6 +107,8 @@ getCurrentListOfUidsInCloudGroupToSync ()
 
     cloud_uids=$( eval ${dsidm_cmd_to_evaluate} group members \'${cloud_group_cn}\' | jq -r '.members[]' )
 
+    #FIXME: this iteration is very slow.
+    # may be replaced by sed
     while read cn
     do
 	if [[ -n "${cn}" ]]

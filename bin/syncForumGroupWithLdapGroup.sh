@@ -61,7 +61,7 @@ _TMP_REMAP_CLOUD_UID_TO_LDAP_CN ()
     # FIXME: inconsistency between Cloud & Ldap => uid mismatch
     # remap Cloud uids to the corresponding Ldap dn
 
-    case "${}" in
+    case "${cloud_uid}" in
 	'8e198ee0-d5b3-46fa-be8e-f2b36402b433')
 	    cloud_uid='pc_forum_sso-36979'
 	    ;;

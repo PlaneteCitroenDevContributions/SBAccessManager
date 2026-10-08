@@ -83,8 +83,12 @@ addUidToCloudGroup ()
     cloud_uid="${remapped_cloud_uid}"
 
     dn=$( eval ${dsidm_cmd_to_evaluate} user get \'${cloud_uid}\' | jq -r '.dn' )
-
-    eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' \'${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\'  \'${dn}\'
+    if [[ -z "${dn}" ]]
+    then
+	echo "ERROR: could not get DN for uid \"${cloud_uid}\" from Ldap" 1>&2
+    else
+	eval ${dsidm_cmd_to_evaluate} 'group' 'add_member' \'${CLOUD_LDAP_GROUP_NAME_TO_SYNC}\'  \'${dn}\'
+    fi
 }
 
 removeUidFromCloudGroup ()
@@ -109,7 +113,7 @@ getCurrentListOfUidsInCloudGroupToSync ()
 
     #FIXME: this iteration is very slow.
     # may be replaced by sed
-    while read cn
+    while read -r cn
     do
 	if [[ -n "${cn}" ]]
 	then
@@ -153,7 +157,7 @@ updateDumpForListOfloudUid ()
 
     file_of_cloud_uids="$1"
 
-    while read cloud_uid
+    while read -r cloud_uid
     do
 	cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
     done < "${file_of_cloud_uids}"
@@ -184,7 +188,7 @@ ignoreDisabledCloudUidsAndUpdateDump ()
 
     disabled_profiles_uid_list=$( jq -s . "${_cache_dir}"/cloud_profile_*.json | jq -r '.[].ocs.data | select(.enabled==false) | .id' )
 
-    while read cloud_uid
+    while read -r cloud_uid
     do
 	if [[ -n "${cloud_uid}" ]]
 	then
@@ -225,7 +229,7 @@ _safeDeleteCachedFileList ()
     multiline_file_list="$1"
     if [[ -n "${multiline_file_list}" ]]
     then
-	while read obsolete_file
+	while read -r obsolete_file
 	do
 	    if [[ -f "${obsolete_file}" ]]
 	    then
@@ -311,7 +315,7 @@ searchOrMayBeUpdateTheCorrespondingCloudProfileUID ()
 
 	    # forget remaining file
 	    ignored_files=$( echo "${cloud_profile_entries}" | tail --lines=+2 )
-	    while read filename
+	    while read -r filename
 	    do
 		rm "${filename}"
 	    done <<< "${ignored_files}"
@@ -412,7 +416,7 @@ ${CURL} -s -u "${INVISION_API_KEY}:" --output "${_cache_dir}/forumMembersInGroup
 
 jq -r '.results[].profileUrl' "${_cache_dir}/forumMembersInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}.json" > "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_SOURCE_GROUP_ID_TO_SYNC}.txt"
 
-while read invision_profile_url
+while read -r invision_profile_url
 do
     cloud_uid=$( searchOrMayBeUpdateTheCorrespondingCloudProfileUID "${invision_profile_url}" )
 
@@ -433,7 +437,7 @@ done \
 #
 
 # get corresponding Forum URL registered as Website Cloud profile attribute
-while read cloud_uid
+while read -r cloud_uid
 do
     cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
 
@@ -471,7 +475,7 @@ cat "${_cache_dir}/cloudUidsInGroupToSync.txt" \
     | sort \
     | uniq -d > "${_cache_dir}/cloudActiveUidsInGroupToSync.txt"
 
-while read cloud_uid
+while read -r cloud_uid
 do
 
     cloud_user_data=$( getAndUpdateCacheForSingleCloudUid "${cloud_uid}" )
@@ -499,7 +503,7 @@ cat "${_cache_dir}/cloudUidsInGroupToSync_withCorrespondingForumProfile.txt" \
     | sort \
     | uniq -u > "${_cache_dir}/cloudUidsToAdd.txt"
 
-while read id_and_url
+while read -r id_and_url
 do
     cloud_uid="${id_and_url%;*}"
 
@@ -519,7 +523,7 @@ cat "${_cache_dir}/forumMembersProfileURLInGroup_${INVISION_SOURCE_GROUP_ID_TO_S
     | sort \
     | uniq -u > "${_cache_dir}/cloudUidsToRemove.txt"
 
-while read id_and_url
+while read -r id_and_url
 do
     cloud_uid="${id_and_url%;*}"
 

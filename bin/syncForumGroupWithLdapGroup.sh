@@ -199,6 +199,18 @@ ignoreDisabledCloudUidsAndUpdateDump ()
     done <<<"${disabled_profiles_uid_list}"
 
     enabled_profiles_uid_list=$( jq -s . "${_cache_dir}"/cloud_profile_*.json | jq -r '.[].ocs.data | select(.enabled==true) | .id' )
+
+    if [[ -n "${DISABLED_PROFILES_UID_LIST}" ]]
+    then
+	url_encoded_gid=$( echo -n "${DISABLED_PROFILES_UID_LIST}" | jq -sRr '@uri' )
+	members_of_sync_disabled_group=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/groups/'"${url_encoded_gid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.data.users[]' )
+
+	active_uids_minus_disbaled_uids=$(
+	    echo "${enabled_profiles_uid_list}" "${enabled_profiles_uid_list}" 
+				       )
+	.....
+    fi
+    
     echo "${enabled_profiles_uid_list}" >"${active_cloud_uids_file}"
 }
 

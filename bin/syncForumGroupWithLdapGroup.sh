@@ -23,14 +23,16 @@ fi
 
 Usage ()
 {
-    echo "Usage: $( basename "$0" ) <Invision group ID> <Cloud LDAP group name>
+    echo "Usage: $( basename "$0" ) <Invision group ID> <Cloud LDAP group name sync destination> [<Disable sync for this Cloud LDAP group name>]
 	- all members of <Invision group ID> are added to <Cloud LDAP group name>
-	- members of <Cloud LDAP group name> not in <Invision group ID> are remove from <Cloud LDAP group name>" 1>&2
+	- members of <Cloud LDAP group name> not in <Invision group ID> are remove from <Cloud LDAP group name>
+	- members of <Disable sync for this Cloud LDAP groupname> will be ignored by the synchronsation process" 1>&2
 }
 
 
 INVISION_SOURCE_GROUP_ID_TO_SYNC="$1"
 CLOUD_LDAP_GROUP_NAME_TO_SYNC="$2"
+DISABLED_SYNC_CLOUD_LDAP_GROUP_NAME="$3"
 
 if [[ -z "${INVISION_SOURCE_GROUP_ID_TO_SYNC}" ]]
 then

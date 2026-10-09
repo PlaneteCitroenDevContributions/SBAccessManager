@@ -200,10 +200,10 @@ ignoreDisabledCloudUidsAndUpdateDump ()
 
     active_uid_list=$( jq -s . "${_cache_dir}"/cloud_profile_*.json | jq -r '.[].ocs.data | select(.enabled==true) | .id' )
 
-    if [[ -n "${DISABLED_PROFILES_UID_LIST}" ]]
+    if [[ -n "${DISABLED_SYNC_CLOUD_LDAP_GROUP_NAME}" ]]
     then
 
-	url_encoded_gid=$( echo -n "${DISABLED_PROFILES_UID_LIST}" | jq -sRr '@uri' )
+	url_encoded_gid=$( echo -n "${DISABLED_SYNC_CLOUD_LDAP_GROUP_NAME}" | jq -sRr '@uri' )
 	members_of_sync_disabled_group=$( ${CURL} -s -u "${CLOUD_ADMIN_USER}:${CLOUD_ADMIN_PASSWORD}" -X GET "${CLOUD_BASE_URL}"'/ocs/v2.php/cloud/groups/'"${url_encoded_gid}"'?format=json' -H "OCS-APIRequest: true" | jq -r '.ocs.data.users[]' )
 
 	while read -r cloud_uid
@@ -215,11 +215,11 @@ ignoreDisabledCloudUidsAndUpdateDump ()
 	done <<<"${members_of_sync_disabled_group}"
 	    
 	active_uids_minus_disabled_uids=$(
-	    echo \
-		"${active_uid_list}" \
-		"${members_of_sync_disabled_group}" \
-		"${members_of_sync_disabled_group}" \
-		| sort | uniq -u
+	    (
+		echo "${active_uid_list}"
+		echo "${members_of_sync_disabled_group}"
+		echo "${members_of_sync_disabled_group}"
+	    ) | sort | uniq -u
 	)
 
 	uid_list_to_process="${active_uids_minus_disabled_uids}"

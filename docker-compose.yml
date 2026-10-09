@@ -92,12 +92,12 @@ services:
          - 'while true;
             do
                echo "INFO: $$( date )" 1>&2;
-               echo "Sync $${INVISION_GROUP_ID1} => $${LDAP_GROUP_LDAP_CN1}";
-               /code/bin/syncForumGroupWithLdapGroup.sh "$${INVISION_GROUP_ID1}" "$${LDAP_GROUP_LDAP_CN1}";
-               echo "Sync $${INVISION_GROUP_ID2} => $${LDAP_GROUP_LDAP_CN2}";
-               /code/bin/syncForumGroupWithLdapGroup.sh "$${INVISION_GROUP_ID2}" "$${LDAP_GROUP_LDAP_CN2}";
-               echo "Sync $${INVISION_GROUP_ID3} => $${LDAP_GROUP_LDAP_CN3}";
-               /code/bin/syncForumGroupWithLdapGroup.sh "$${INVISION_GROUP_ID3}" "$${LDAP_GROUP_LDAP_CN3}";
+               echo "Sync $${INVISION_GROUP_ID1} => $${SYNC_DESTINATION_LDAP_GROUP_CN1}";
+               /code/bin/syncForumGroupWithLdapGroup.sh "$${INVISION_GROUP_ID1}" "$${SYNC_DESTINATION_LDAP_GROUP_CN1}" "$${DISABLE_SYNC_FOR_MEMBERS_OF_LDAP_GROUP_CN1}";
+               echo "Sync $${INVISION_GROUP_ID2} => $${SYNC_DESTINATION_LDAP_GROUP_CN2}";
+               /code/bin/syncForumGroupWithLdapGroup.sh "$${INVISION_GROUP_ID2}" "$${SYNC_DESTINATION_LDAP_GROUP_CN2}" "$${DISABLE_SYNC_FOR_MEMBERS_OF_LDAP_GROUP_CN2}";
+               echo "Sync $${INVISION_GROUP_ID3} => $${SYNC_DESTINATION_LDAP_GROUP_CN3}";
+               /code/bin/syncForumGroupWithLdapGroup.sh "$${INVISION_GROUP_ID3}" "$${SYNC_DESTINATION_LDAP_GROUP_CN3}" "$${DISABLE_SYNC_FOR_MEMBERS_OF_LDAP_GROUP_CN3}";
                echo "INFO: $$( date ) ========== Next check in $${DELAY} ==========" 1>&2;
                sleep $${DELAY};
             done'
